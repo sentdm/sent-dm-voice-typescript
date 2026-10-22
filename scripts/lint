@@ -16,9 +16,11 @@ echo "==> Building"
 echo "==> Checking types"
 ./node_modules/typescript/bin/tsc
 
-echo "==> Running Are The Types Wrong?"
-./node_modules/.bin/attw --pack dist -f json >.attw.json || true
-node scripts/utils/attw-report.cjs
+for package in $(./scripts/utils/packages); do
+  echo "==> Running Are The Types Wrong? on $package"
+  ./node_modules/.bin/attw --pack "packages/$package/dist" -f json >.attw.json || true
+  node scripts/utils/attw-report.cjs
 
-echo "==> Running publint"
-./node_modules/.bin/publint dist
+  echo "==> Running publint on $package"
+  ./node_modules/.bin/publint "packages/$package/dist"
+done

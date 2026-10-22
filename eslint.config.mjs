@@ -2,18 +2,31 @@
 import tseslint from 'typescript-eslint';
 import unusedImports from 'eslint-plugin-unused-imports';
 
-const packageImport = {
-  regex: '^@sentdm/voice(/.*)?',
-  message: 'Use a relative import, not a package import.',
+/** @param {string} name */
+const selfImport = (name) => ({
+  regex: `^${name}(/.*)?$`,
+  message: 'Use a relative import, not a package import, inside the package itself.',
+});
+
+const clientFromCore = {
+  regex: '^@sentdm/voice-client(-react)?(/.*)?$',
+  message: '@sentdm/voice-client-core must not depend on the packages built on it.',
 };
 
 const providerImport = {
   regex: '^sinch-rtc(/.*)?$',
-  message: 'sinch-rtc may only be imported by src/adapter/sinch.ts.',
+  message: 'sinch-rtc may only be imported by packages/voice-client/src/adapter/sinch.ts.',
+};
+
+/** The imports each package's source may not make, by package directory. */
+const restricted = {
+  'voice-client-core': [selfImport('@sentdm/voice-client-core'), clientFromCore],
+  'voice-client': [selfImport('@sentdm/voice-client')],
+  'voice-client-react': [selfImport('@sentdm/voice-client-react')],
 };
 
 export default tseslint.config(
-  { ignores: ['dist/'] },
+  { ignores: ['**/dist/'] },
   {
     languageOptions: {
       parser: tseslint.parser,
@@ -27,17 +40,23 @@ export default tseslint.config(
     rules: {
       'no-unused-vars': 'off',
       'unused-imports/no-unused-imports': 'error',
-      'no-restricted-imports': ['error', { patterns: [packageImport, providerImport] }],
+      'no-restricted-imports': ['error', { patterns: [providerImport] }],
     },
   },
-  {
-    files: ['src/adapter/sinch.ts'],
+  ...Object.entries(restricted).map(([dir, patterns]) => ({
+    files: [`packages/${dir}/src/**`],
     rules: {
-      'no-restricted-imports': ['error', { patterns: [packageImport] }],
+      'no-restricted-imports': ['error', { patterns: [...patterns, providerImport] }],
+    },
+  })),
+  {
+    files: ['packages/voice-client/src/adapter/sinch.ts'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: restricted['voice-client'] }],
     },
   },
   {
-    files: ['tests/**'],
+    files: ['packages/*/tests/**'],
     rules: {
       'no-restricted-imports': 'off',
     },

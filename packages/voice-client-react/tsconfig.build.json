@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["dist/src"],
+  "exclude": [],
+  "compilerOptions": {
+    "rootDir": "./dist/src",
+    "paths": {
+      "@sentdm/voice-client-react/*": ["./dist/src/*"],
+      "@sentdm/voice-client-react": ["./dist/src/index.ts"]
+    },
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "dist",
+    "pretty": true,
+    "sourceMap": true
+  }
+}

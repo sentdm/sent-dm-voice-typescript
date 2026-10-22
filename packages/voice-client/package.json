@@ -1,0 +1,44 @@
+{
+  "name": "@sentdm/voice-client",
+  "version": "0.1.1",
+  "description": "Sent Voice Client for the web: calls and incoming calls inside your app",
+  "author": "Sent <support@sent.dm>",
+  "types": "dist/index.d.ts",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sentdm/sent-dm-voice-typescript.git",
+    "directory": "packages/voice-client"
+  },
+  "license": "Apache-2.0",
+  "files": [
+    "**/*"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@sentdm/voice-client-core": "workspace:*",
+    "sinch-rtc": "2.49.11"
+  },
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./errors": {
+      "require": {
+        "types": "./dist/errors.d.ts",
+        "default": "./dist/errors.js"
+      },
+      "types": "./dist/errors.d.mts",
+      "default": "./dist/errors.mjs"
+    },
+    "./sw.js": "./dist/sw.js"
+  }
+}

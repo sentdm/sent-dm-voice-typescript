@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+set -exuo pipefail
+
+root="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$1"
+
+PKG_DIR="$(pwd)" node "$root/scripts/utils/check-version.cjs"
+
+# Build into dist and publish the package from there, so that src/react/index.ts
+# becomes <package root>/react/index.js and subpath imports work even with
+# "moduleResolution": "node".
+rm -rf dist; mkdir dist
+# Copy src to dist/src and build from dist/src into dist, so that the source map
+# for index.js.map refers to ./src/index.ts etc.
+cp -rp src README.md dist
+if [ -e src/sw.js ]; then cp src/sw.js dist; fi
+cp "$root/LICENSE" dist
+if [ -e CHANGELOG.md ]; then cp CHANGELOG.md dist; fi
+
+# Convert the export map paths for the dist directory, and a few other minor things.
+PKG_JSON_PATH="$(pwd)/package.json" node "$root/scripts/utils/make-dist-package-json.cjs" > dist/package.json
+
+# Build to .js/.mjs/.d.ts files.
+"$root/node_modules/.bin/tsc-multi"
+
+cp tsconfig.dist-src.json dist/src/tsconfig.json
+
+DIST_PATH="$(pwd)/dist" node "$root/scripts/utils/postprocess-files.cjs"
+
+# Make sure nothing crashes when we require the output CJS or import the output ESM.
+name="$(node -p 'require("./package.json").name')"
+(cd dist && node -e "require('$name')")
+(cd dist && node -e "import('$name')" --input-type=module)

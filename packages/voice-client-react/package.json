@@ -1,0 +1,38 @@
+{
+  "name": "@sentdm/voice-client-react",
+  "version": "0.1.1",
+  "description": "React bindings for Sent Voice Client: a provider and hooks that re-render on call events",
+  "author": "Sent <support@sent.dm>",
+  "types": "dist/index.d.ts",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sentdm/sent-dm-voice-typescript.git",
+    "directory": "packages/voice-client-react"
+  },
+  "license": "Apache-2.0",
+  "files": [
+    "**/*"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@sentdm/voice-client": "workspace:*",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@sentdm/voice-client": "workspace:*"
+  },
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  }
+}
