@@ -37,7 +37,7 @@ export class MockAdapter implements ProviderAdapter {
     return callId;
   }
 
-  async register(token: string): Promise<void> {
+  async register(credential: string): Promise<void> {
     this.#fail('register');
   }
 

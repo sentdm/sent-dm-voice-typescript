@@ -11,7 +11,7 @@ import {
   SentVoiceError,
 } from '@sentdm/voice-client/errors';
 import { providerDetailOf } from '@sentdm/voice-client-core';
-import { prefix, voiceToken } from '../../../voice-client-core/tests/voice-token';
+import { prefix, providerCredential } from '../../../voice-client-core/tests/voice-token';
 import { describeSharedAdapterTests } from './shared-adapter-tests';
 import {
   CallEndCause,
@@ -87,9 +87,9 @@ describe('SinchAdapter', () => {
     'register starts a client for the token user with %s enabling incoming calls',
     async (_, serviceWorker, push) => {
       await load({ serviceWorker });
-      const jwt = voiceToken();
+      const credential = providerCredential();
 
-      await adapter.register(jwt);
+      await adapter.register(credential);
 
       expect(lastClient()).toMatchObject({
         settings: {
@@ -99,23 +99,23 @@ describe('SinchAdapter', () => {
         },
         push,
         log: ['setSupportManagedPush', 'start'],
-        credentials: [jwt],
+        credentials: [credential],
       });
     },
   );
 
   test('register while registered keeps the client and answers its next credential request with the new token', async () => {
-    const jwt = voiceToken();
-    await adapter.register(jwt);
+    const credential = providerCredential();
+    await adapter.register(credential);
     const client = lastClient();
-    const refreshed = voiceToken({ 'sent:number': '+38349333444' });
+    const refreshed = providerCredential({ 'sent:number': '+38349333444' });
 
     await adapter.register(refreshed);
     client.requestCredentials();
 
     expect(lastClient()).toBe(client);
     expect(client.log).toEqual(['setSupportManagedPush', 'start']);
-    expect(client.credentials).toEqual([jwt, refreshed]);
+    expect(client.credentials).toEqual([credential, refreshed]);
   });
 
   test.each<[string, () => Error, string[]]>([
@@ -140,17 +140,17 @@ describe('SinchAdapter', () => {
   ])('when %s, register rejects with the raw error kept and tears the client down', async (_, fail, log) => {
     const failure = fail();
 
-    const error = await rejection(adapter.register(voiceToken()));
+    const error = await rejection(adapter.register(providerCredential()));
     expect(error).toMatchObject(unmapped);
     expect(providerDetailOf(error)).toBe(failure);
     expect(lastClient().log).toEqual(log);
 
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     expect(lastClient().isStarted()).toBe(true);
   });
 
   test('unregister stops incoming-call pushes and terminates the client, while a live call keeps reporting', async () => {
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     const callId = await adapter.call(phone);
 
     await adapter.unregister();
@@ -184,7 +184,7 @@ describe('SinchAdapter', () => {
       ],
     ],
   )('a call to %s is placed with the matching provider call', async (_, place, placed) => {
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
 
     const callId = await place(adapter);
 
@@ -193,7 +193,7 @@ describe('SinchAdapter', () => {
   });
 
   test('provider progress, answer and establishment arrive as ringing, answered and connected', async () => {
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     const callId = await adapter.call(phone);
     const call = calls.get(callId)!;
 
@@ -211,7 +211,7 @@ describe('SinchAdapter', () => {
   });
 
   test('provider warnings arrive as reconnecting and reconnected for missing media, and as quality warnings for jitter, packet loss and round-trip time', async () => {
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     const callId = await adapter.call(phone);
     const call = calls.get(callId)!;
     const { Trigger, Recover } = CallQualityWarningEventType;
@@ -287,7 +287,7 @@ describe('SinchAdapter', () => {
   ])(
     'a call the provider ends with %s ends as mapped, keeping the raw error',
     async (_, endCause, error, ended) => {
-      await adapter.register(voiceToken());
+      await adapter.register(providerCredential());
       const callId = await adapter.call(phone);
 
       calls.get(callId)!.end(endCause, error);
@@ -299,7 +299,7 @@ describe('SinchAdapter', () => {
   );
 
   test('an answer that cannot get the microphone rejects with MediaPermissionError', async () => {
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     const call = lastClient().callClient.receiveCall(`${prefix}_ben`);
     const refused = new Error(
       'Could not get media tracks. Make sure you have granted required media permissions.',
@@ -314,7 +314,7 @@ describe('SinchAdapter', () => {
 
   test('an answer retried within 1.5 s of a failed one waits until the provider accepts it again', async () => {
     jest.useFakeTimers();
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     const call = lastClient().callClient.receiveCall(`${prefix}_ben`);
     const answer = jest.spyOn(call, 'answer');
     call.answerFailure = new Error('Could not get media tracks.');
@@ -335,7 +335,7 @@ describe('SinchAdapter', () => {
   });
 
   test('a placed call that could not open the microphone is hung up and rejected with MediaPermissionError', async () => {
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     lastClient().callClient.microphoneDenied = true;
 
     await expect(adapter.call(phone)).rejects.toBeInstanceOf(MediaPermissionError);
@@ -346,7 +346,7 @@ describe('SinchAdapter', () => {
   });
 
   test('a call that has ended is not touched again, since the provider throws on a second hangup', async () => {
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     const call = lastClient().callClient.receiveCall(`${prefix}_ben`);
     call.end(CallEndCause.Canceled);
 
@@ -356,7 +356,7 @@ describe('SinchAdapter', () => {
   });
 
   test('mute and sendDigits reach the provider call, and an error it throws keeps the raw error', async () => {
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     const callId = await adapter.call(phone);
     const call = calls.get(callId)!;
     const mute = jest.spyOn(call, 'mute');
@@ -382,7 +382,7 @@ describe('SinchAdapter', () => {
   });
 
   test('getStats reads audio jitter, packet loss and round-trip time from the peer connection', async () => {
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     const callId = await adapter.call(phone);
     await expect(adapter.getStats(callId)).resolves.toEqual({ jitter: 0, packetLoss: 0, rtt: 0 });
 
@@ -397,7 +397,7 @@ describe('SinchAdapter', () => {
   });
 
   test('a placed call plays through an element the SDK creates, until the call ends', async () => {
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     const callId = await adapter.call(phone);
     const call = calls.get(callId)!;
     const audio = lastAudio();
@@ -410,7 +410,7 @@ describe('SinchAdapter', () => {
   test('an incoming call plays through the element the app gives once it is answered', async () => {
     const element = new FakeAudio();
     await load({ audioElement: element as unknown as HTMLAudioElement });
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     const call = lastClient().callClient.receiveCall(`${prefix}_ben`);
     expect(element.srcObject).toBeNull();
 
@@ -431,7 +431,7 @@ describe('SinchAdapter', () => {
 
   test('an input device chosen before register applies once the client starts, and at once afterwards', async () => {
     await adapter.setInputDevice('microphone-id');
-    await adapter.register(voiceToken());
+    await adapter.register(providerCredential());
     expect(lastClient().callClient.constraints).toEqual({ deviceId: 'microphone-id' });
 
     await adapter.setInputDevice('headset-id');

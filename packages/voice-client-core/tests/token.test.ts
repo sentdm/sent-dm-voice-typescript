@@ -1,53 +1,94 @@
-import { TokenInvalidError } from '@sentdm/voice-client-core';
-import { decodeToken } from '@sentdm/voice-client-core';
-import { issuer, prefix, voiceToken } from './voice-token';
+import { NetworkError, TokenInvalidError, fetchToken } from '@sentdm/voice-client-core';
+import { credentialFor, exchangeURL, prefix, providerCredential, response, voiceToken } from './voice-token';
 
-const payload = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+const answer = (status: number, body?: unknown) =>
+  jest.spyOn(globalThis, 'fetch').mockResolvedValue(response(status, body));
 
-describe('decodeToken', () => {
-  test('reads the prefix and identity from the userId, the bound number, and iat and exp in ms', () => {
-    const jwt = voiceToken({ iat: 1_790_078_400, exp: 1_790_079_000 });
+const exchanged = {
+  credential: providerCredential(),
+  identity: 'agent-42',
+  number: '+38349111222',
+  prefix: `${prefix}_`,
+  issued_at: '2026-09-22T12:00:00.000Z',
+  expires_at: '2026-09-22T12:10:00.000Z',
+};
 
-    expect(decodeToken(jwt)).toEqual({
-      jwt,
-      prefix,
+describe('fetchToken', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  test('exchanges the token with Sent for the credential, identity, number, prefix with its separator and lifetime in ms', async () => {
+    const token = voiceToken({ iat: 1_790_078_400, exp: 1_790_079_000 });
+    const fetch = jest.spyOn(globalThis, 'fetch');
+
+    await expect(fetchToken(async () => token, undefined)).resolves.toEqual({
+      token,
+      credential: credentialFor(token),
       identity: 'agent-42',
       number: '+38349111222',
+      prefix: `${prefix}_`,
       issuedAt: 1_790_078_400_000,
       expiresAt: 1_790_079_000_000,
     });
+    expect(fetch).toHaveBeenCalledWith(exchangeURL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
   });
 
-  test('splits on the first separator, so an identity may contain it', () => {
-    const { identity } = decodeToken(voiceToken({ sub: `${issuer}/users/${prefix}_agent_42_b` }));
+  test('exchanges under the base URL the app set', async () => {
+    const fetch = jest.spyOn(globalThis, 'fetch');
 
-    expect(identity).toBe('agent_42_b');
+    await fetchToken(async () => voiceToken(), 'https://staging.example/');
+
+    expect(fetch).toHaveBeenCalledWith('https://staging.example/v3/voice/tokens/exchange', expect.anything());
   });
 
-  test('treats the prefix as opaque: any prefix without a separator is accepted', () => {
-    const token = decodeToken(voiceToken({ sub: `${issuer}/users/k3x9_agent-42` }));
+  test('a token provider that fails is a network error', async () => {
+    await expect(
+      fetchToken(() => Promise.reject(new TypeError('Failed to fetch')), undefined),
+    ).rejects.toThrow(NetworkError);
+  });
 
-    expect(token.prefix).toBe('k3x9');
-    expect(token.identity).toBe('agent-42');
+  test.each([[undefined], [''], [42]])(
+    'a token provider value that is not a string token, %p, is invalid',
+    async (value) => {
+      await expect(fetchToken(async () => value as string, undefined)).rejects.toThrow(TokenInvalidError);
+    },
+  );
+
+  test.each([401, 403])(
+    'a token Sent refuses with HTTP %i is invalid, so it is not retried',
+    async (status) => {
+      answer(status);
+
+      await expect(fetchToken(async () => voiceToken(), undefined)).rejects.toThrow(TokenInvalidError);
+    },
+  );
+
+  test.each([404, 429, 500, 503])('HTTP %i is a network error, which the client retries', async (status) => {
+    answer(status);
+
+    await expect(fetchToken(async () => voiceToken(), undefined)).rejects.toThrow(NetworkError);
+  });
+
+  test('not reaching Sent is a network error', async () => {
+    jest.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await expect(fetchToken(async () => voiceToken(), undefined)).rejects.toThrow(NetworkError);
   });
 
   test.each<[string, unknown]>([
-    ['is not a string', { token: voiceToken() }],
-    ['does not have three parts', voiceToken().split('.').slice(0, 2).join('.')],
-    ['has a payload that is not base64url JSON', 'eyJhbGciOiJIUzI1NiJ9.bm90IGpzb24.c2ln'],
-    ['has a payload that is not an object', `eyJhbGciOiJIUzI1NiJ9.${payload(42)}.c2ln`],
-    ['has no iat', voiceToken({ iat: undefined })],
-    ['has an exp that is not a number', voiceToken({ exp: '1790079000' })],
-    ['expires when it is issued', voiceToken({ iat: 1_790_078_400, exp: 1_790_078_400 })],
-    ['has a subject outside its issuer', voiceToken({ sub: `//elsewhere/users/${prefix}_agent-42` })],
-    ['has a userId without a prefix', voiceToken({ sub: `${issuer}/users/agent-42` })],
-    ['has an empty prefix', voiceToken({ sub: `${issuer}/users/_agent-42` })],
-    ['has no separator', voiceToken({ sub: `${issuer}/users/${prefix}agent-42` })],
-    ['uses the old = separator', voiceToken({ sub: `${issuer}/users/${prefix}=agent-42` })],
-    ['has an empty identity', voiceToken({ sub: `${issuer}/users/${prefix}_` })],
-    ['has no bound number', voiceToken({ 'sent:number': undefined })],
-    ['has an empty bound number', voiceToken({ 'sent:number': '' })],
-  ])('a token that %s is a TokenInvalidError', (_, jwt) => {
-    expect(() => decodeToken(jwt)).toThrow(TokenInvalidError);
+    ['no body', undefined],
+    ['no data', { success: true }],
+    ['no credential', { data: { ...exchanged, credential: '' } }],
+    ['no identity', { data: { ...exchanged, identity: undefined } }],
+    ['no number', { data: { ...exchanged, number: 42 } }],
+    ['no prefix', { data: { ...exchanged, prefix: '' } }],
+    ['an unreadable expiry', { data: { ...exchanged, expires_at: 'soon' } }],
+    ['an expiry that is not after the issue', { data: { ...exchanged, expires_at: exchanged.issued_at } }],
+  ])('an answer with %s is a network error', async (_, body) => {
+    answer(200, body);
+
+    await expect(fetchToken(async () => voiceToken(), undefined)).rejects.toThrow(NetworkError);
   });
 });

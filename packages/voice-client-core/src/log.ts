@@ -17,7 +17,8 @@ const levelNumbers = {
   debug: 500,
 };
 
-const jwtPattern = /eyJ[\w-]*\.[\w-]*\.[\w-]*/g;
+// Sent voice tokens (`vt_` and one dot) and the provider credentials they are exchanged for (JWTs).
+const tokenPattern = /vt_[\w-]+\.[\w-]+|eyJ[\w-]*\.[\w-]*\.[\w-]*/g;
 
 const isLogLevel = (level: string): level is LogLevel =>
   Object.prototype.hasOwnProperty.call(levelNumbers, level);
@@ -47,7 +48,7 @@ function makeLogFn(fnLevel: keyof Logger, logger: Logger, logLevel: LogLevel) {
   if (levelNumbers[fnLevel] > levelNumbers[logLevel]) {
     return noop;
   }
-  return (message: string) => logger[fnLevel](message.replace(jwtPattern, '***'));
+  return (message: string) => logger[fnLevel](message.replace(tokenPattern, '***'));
 }
 
 export function createLog(logger: Logger, logLevel: LogLevel): Log {

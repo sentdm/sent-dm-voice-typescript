@@ -35,10 +35,19 @@ import { VERSION } from './version';
 
 export interface SentVoiceOptions {
   /**
-   * Returns a voice token from your backend, which mints it with `POST /v3/channels/voice/tokens`.
-   * Called by `register()` and again before each token expires.
+   * Returns a voice token from your backend, which mints it with `POST /v3/voice/tokens`.
+   * Called by `register()` and again before each token expires. The token is opaque: pass it on
+   * unchanged.
    */
   tokenProvider: () => Promise<string>;
+
+  /**
+   * The Sent API the SDK calls with the voice token, to exchange it when registering and to report
+   * telemetry.
+   *
+   * @default 'https://api.sent.dm'
+   */
+  baseURL?: string | undefined;
 
   /**
    * The maximum number of times that registering or refreshing the voice token is retried
@@ -88,10 +97,10 @@ export interface SentVoiceOptions {
 
   /**
    * Usage and call quality data the SDK reports to Sent, authenticated with the voice token: the
-   * browser and device, registration and call timings, call quality and error codes. `baseURL`
-   * defaults to `https://api.sent.dm`; set `disabled` to report nothing.
+   * browser and device, registration and call timings, call quality and error codes. Set `disabled`
+   * to report nothing.
    */
-  telemetry?: { baseURL?: string | undefined; disabled?: boolean | undefined } | undefined;
+  telemetry?: { disabled?: boolean | undefined } | undefined;
 }
 
 export interface SentVoiceEvents {
@@ -129,6 +138,7 @@ export class SentVoice extends TypedEmitter<SentVoiceEvents> {
 
   readonly audio: AudioController;
   #tokenProvider: () => Promise<string>;
+  #baseURL: string | undefined;
   #registerRetries: number;
   #log: Log;
   #adapterOptions: AdapterOptions;
@@ -151,6 +161,7 @@ export class SentVoice extends TypedEmitter<SentVoiceEvents> {
 
   constructor({
     tokenProvider,
+    baseURL,
     registerRetries = 2,
     logLevel,
     logger = console,
@@ -160,6 +171,7 @@ export class SentVoice extends TypedEmitter<SentVoiceEvents> {
   }: SentVoiceOptions) {
     super();
     this.#tokenProvider = tokenProvider;
+    this.#baseURL = baseURL;
     this.#registerRetries = registerRetries;
     this.#log = createLog(
       logger,
@@ -172,7 +184,7 @@ export class SentVoice extends TypedEmitter<SentVoiceEvents> {
       },
       onLifecycle: (lifecycle) => (this.#audioLifecycle = lifecycle),
     });
-    if (!telemetry?.disabled) this.#telemetry = new Telemetry(telemetry?.baseURL, this.#log, VERSION);
+    if (!telemetry?.disabled) this.#telemetry = new Telemetry(baseURL, this.#log, VERSION);
   }
 
   get state(): SentVoice.ClientState {
@@ -352,11 +364,15 @@ export class SentVoice extends TypedEmitter<SentVoiceEvents> {
 
   async #attempt(run: number): Promise<VoiceToken> {
     this.#check(run);
-    const token = await fetchToken(this.#tokenProvider);
+    // The provider loads while the token is exchanged, as neither needs the other. A load that fails
+    // first is raised below, after the exchange.
+    const loading = (this.#adapter ??= this.#loadAdapter());
+    loading.catch(() => {});
+    const token = await fetchToken(this.#tokenProvider, this.#baseURL);
     await this.#callAdapter(async () => {
-      const adapter = await (this.#adapter ??= this.#loadAdapter());
+      const adapter = await loading;
       this.#check(run);
-      await adapter.register(token.jwt);
+      await adapter.register(token.credential);
       this.#registeredAdapter = adapter;
     });
     return token;
@@ -489,7 +505,7 @@ export class SentVoice extends TypedEmitter<SentVoiceEvents> {
 
   #online(token: VoiceToken, run: number): void {
     this.#token = token;
-    this.#telemetry?.useToken(token.jwt);
+    this.#telemetry?.useToken(token.token);
     const delay = refreshDelay(token);
     this.#log.debug(`Refreshing the voice token in ${delay} ms`);
     this.#timer = setTimeout(() => void this.#refresh(run, token.expiresAt), delay);

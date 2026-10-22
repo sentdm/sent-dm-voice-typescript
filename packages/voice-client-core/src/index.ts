@@ -6,11 +6,9 @@ export { attachProviderDetail, providerDetailOf } from './provider-detail';
 export { TypedEmitter } from './events';
 export { createLog, parseLogLevel, type Log, type Logger, type LogLevel } from './log';
 export {
-  decodeToken,
   fetchToken,
   offlineRetryDelay,
   qualify,
-  readClaims,
   refreshDelay,
   retryDelay,
   tokenTiming,

@@ -1,9 +1,9 @@
+import { prefix, providerCredential } from '../../../voice-client-core/tests/voice-token';
 import type { CallEvent, CallTarget } from '@sentdm/voice-client/adapter/types';
 import { CallFailedError, NetworkError } from '@sentdm/voice-client/errors';
 import { MockAdapter, type CallScript, type FailableMethod } from './mock-adapter';
 import { describeSharedAdapterTests } from './shared-adapter-tests';
 
-const prefix = '0f8fad5b-d9cb-469f-a165-70867728950e';
 const caller = `${prefix}_agent-42`;
 const room = `${prefix}_daily-standup`;
 const phone: CallTarget = { kind: 'number', number: '+38349111222' };
@@ -28,7 +28,7 @@ describe('MockAdapter', () => {
   afterEach(() => jest.useRealTimers());
 
   test.each<{ method: FailableMethod; invoke: (callId: string) => Promise<unknown> }>([
-    { method: 'register', invoke: () => adapter.register('token') },
+    { method: 'register', invoke: () => adapter.register(providerCredential()) },
     { method: 'unregister', invoke: () => adapter.unregister() },
     { method: 'call', invoke: () => adapter.call(phone) },
     { method: 'joinConference', invoke: () => adapter.joinConference(room) },

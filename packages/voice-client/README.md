@@ -18,7 +18,7 @@ Mint tokens on your server with your Sent API key, never in the browser, for the
 
 ```ts
 export async function createVoiceToken(identity: string): Promise<string> {
-  const response = await fetch('https://api.sent.dm/v3/channels/voice/tokens', {
+  const response = await fetch('https://api.sent.dm/v3/voice/tokens', {
     method: 'POST',
     headers: { 'x-api-key': process.env['SENT_DM_API_KEY'] ?? '', 'Content-Type': 'application/json' },
     body: JSON.stringify({ identity }),
@@ -71,10 +71,10 @@ The first `register()` asks the user to allow notifications, which the browser n
 
 ## Token lifecycle
 
-`tokenProvider` is how the SDK gets every token. It must return the `token` that `POST /v3/channels/voice/tokens` responded with, fetched fresh each time, because the SDK calls it again before each token expires.
+`tokenProvider` is how the SDK gets every token. It must return the `token` that `POST /v3/voice/tokens` responded with, unchanged and fetched fresh each time, because the SDK calls it again before each token expires. The token is opaque: read the identity, number and expiry from the minting response, not from the token. The SDK exchanges it with Sent for what it registers with, so nothing your backend or app handles belongs to the calling provider.
 
 - `register()` calls it and resolves once the client is `registered`. The client moves from `unregistered` to `registering` to `registered`, emitting each state as an event.
-- A token provider that throws or rejects is retried after a short backoff, 2 more times by default (`registerRetries`); `register()` then rejects with a `NetworkError`. A value that is not a voice token rejects with a `TokenInvalidError` at once.
+- A token provider that throws or rejects, or a token exchange that cannot reach Sent or is rate limited, is retried after a short backoff, 2 more times by default (`registerRetries`); `register()` then rejects with a `NetworkError`. A value that is not a voice token, or a token Sent refuses, rejects with a `TokenInvalidError` at once.
 - The token is refreshed at 80% of its lifetime, or 30 seconds before it expires if that is earlier, but never before half of its lifetime has passed. `tokenWillExpire` fires first, then `tokenProvider` is called with the same retries. Nothing else changes for your app.
 - If the retries run out, the client emits `error` with the cause and `offline` with a `TokenExpiredError`, then tries again about every 30 seconds until it is `registered` again; calling `register()` tries at once. Calls in progress go on, but `connect()` and `joinConference()` throw a `NotRegisteredError` while the client is offline.
 - `unregister()` stops receiving calls and leaves calls in progress alone. `destroy()` ends every call and tears the client down for good.
@@ -191,13 +191,13 @@ export async function answer(invite: SentVoice.CallInvite) {
 
 | Error                        | `code`                    | `category`   | When                                                                                                                                                                  |
 | ---------------------------- | ------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TokenInvalidError`          | `TOKEN_INVALID`           | `auth`       | `register()`: the token provider returned something that is not a voice token                                                                                         |
+| `TokenInvalidError`          | `TOKEN_INVALID`           | `auth`       | `register()`: the token provider returned something that is not a voice token, or a token Sent refuses                                                                |
 | `TokenExpiredError`          | `TOKEN_EXPIRED`           | `auth`       | the `offline` event: the token could not be refreshed                                                                                                                 |
 | `NotRegisteredError`         | `NOT_REGISTERED`          | `validation` | `connect()` or `joinConference()` while not registered; registering, calling or choosing a device after `destroy()`                                                   |
 | `MediaPermissionError`       | `MEDIA_PERMISSION_DENIED` | `media`      | `connect()`, `joinConference()` or `accept()`: the microphone could not be opened                                                                                     |
 | `CallFailedError`            | `CALL_FAILED`             | `signaling`  | `accept()` on a call that ended before it was answered; a call the provider could not set up, such as to an identity that is not registered, ends as `failed` with it |
 | `CallRejectedError`          | `CALL_REJECTED`           | `signaling`  | not raised yet: a call the other side declines ends as `busy`                                                                                                         |
-| `NetworkError`               | `NETWORK`                 | `network`    | `register()`, when the token provider keeps failing or the calling provider cannot be loaded; a call whose connection failed or was lost                              |
+| `NetworkError`               | `NETWORK`                 | `network`    | `register()`, when the token provider or the token exchange keeps failing or the calling provider cannot be loaded; a call whose connection failed or was lost        |
 | `CapabilityUnsupportedError` | `CAPABILITY_UNSUPPORTED`  | `capability` | `setOutputDevice()` where the browser cannot choose the speaker; listing devices over plain HTTP                                                                      |
 | `SentVoiceError`             | `INVALID_ADDRESS`         | `validation` | `connect()` or `joinConference()` with a `to` or `name` that does not fit                                                                                             |
 | `SentVoiceError`             | `CALL_IN_PROGRESS`        | `validation` | `connect()` or `joinConference()` while a call is in progress or an incoming call is waiting for an answer                                                            |
@@ -273,7 +273,7 @@ The SDK reports usage and call quality data to Sent, authenticated with the voic
 - for each call: its id, direction and outcome, how long it took to connect and how long it lasted, and at its end the average round-trip time, jitter and packet loss of samples taken every 10 seconds
 - the errors the client and its calls report: code, category, whether retriable, the message, and the underlying provider error with its name, message, stack and properties
 
-No audio, phone numbers or identities are added by the SDK; the underlying provider error travels as the provider produced it. Batches go to `https://api.sent.dm/v3/voice/telemetry` 3 seconds after the first event queued, so events that happen together share one request, and at once when a call ends, when the page is hidden and when the client is destroyed. A batch that fails, or that Sent refuses (for example with a 429 or a 5xx), is retried once, with the next batch or within 30 seconds, then dropped; telemetry never throws to your app and never delays a call. Turn it off with `telemetry: { disabled: true }`.
+No audio, phone numbers or identities are added by the SDK; the underlying provider error travels as the provider produced it. Batches go to `/v3/voice/telemetry` under `baseURL` (`https://api.sent.dm` by default) 3 seconds after the first event queued, so events that happen together share one request, and at once when a call ends, when the page is hidden and when the client is destroyed. A batch that fails, or that Sent refuses (for example with a 429 or a 5xx), is retried once, with the next batch or within 30 seconds, then dropped; telemetry never throws to your app and never delays a call. Turn it off with `telemetry: { disabled: true }`.
 
 ## Browser realities
 
