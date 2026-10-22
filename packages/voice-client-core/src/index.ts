@@ -13,6 +13,7 @@ export {
   readClaims,
   refreshDelay,
   retryDelay,
+  tokenTiming,
   unqualify,
   type VoiceToken,
 } from './token';

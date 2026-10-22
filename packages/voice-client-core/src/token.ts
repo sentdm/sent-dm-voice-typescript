@@ -29,11 +29,18 @@ export function unqualify(prefix: string, qualified: string): string | undefined
     : undefined;
 }
 
-const refreshShare = 0.8;
-const refreshMargin = 30_000;
-const initialRetryDelay = 500;
-const maxRetryDelay = 8_000;
-const offlineRetryInterval = 30_000;
+/** When a token is refreshed and how failed fetches are retried. Part of the Voice Client contract. */
+export const tokenTiming = {
+  /** Refresh at this share of the token's lifetime... */
+  refreshShare: 0.8,
+  /** ...but at least this long before it expires, and never before half its lifetime. */
+  refreshMarginMs: 30_000,
+  /** The first retry after a failed fetch, doubling up to the maximum. */
+  initialRetryDelayMs: 500,
+  maxRetryDelayMs: 8_000,
+  /** How often an offline client tries again. */
+  offlineRetryIntervalMs: 30_000,
+} as const;
 
 export async function fetchToken(tokenProvider: () => Promise<string>): Promise<VoiceToken> {
   let jwt: unknown;
@@ -82,15 +89,18 @@ export function decodeToken(jwt: unknown): VoiceToken {
 
 export function refreshDelay({ issuedAt, expiresAt }: VoiceToken): number {
   const lifetime = expiresAt - issuedAt;
-  return Math.max(Math.min(lifetime * refreshShare, lifetime - refreshMargin), lifetime / 2);
+  return Math.max(
+    Math.min(lifetime * tokenTiming.refreshShare, lifetime - tokenTiming.refreshMarginMs),
+    lifetime / 2,
+  );
 }
 
 export function retryDelay(retry: number): number {
-  return Math.min(initialRetryDelay * 2 ** retry, maxRetryDelay) * jitter();
+  return Math.min(tokenTiming.initialRetryDelayMs * 2 ** retry, tokenTiming.maxRetryDelayMs) * jitter();
 }
 
 export function offlineRetryDelay(): number {
-  return offlineRetryInterval * jitter();
+  return tokenTiming.offlineRetryIntervalMs * jitter();
 }
 
 function jitter(): number {
