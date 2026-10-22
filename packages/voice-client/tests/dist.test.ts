@@ -2,10 +2,10 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
-import * as errors from '@sentdm/voice/errors';
+import * as errors from '@sentdm/voice-client/errors';
 
 const distDir = path.resolve(__dirname, '..', 'dist');
-const entries = ['@sentdm/voice', '@sentdm/voice/errors', '@sentdm/voice/react'];
+const entries = ['@sentdm/voice-client', '@sentdm/voice-client/errors', '@sentdm/voice-client/react'];
 const formats = ['cjs', 'esm'] as const;
 const namespaceTypes = [
   'ConnectParams',
@@ -62,7 +62,7 @@ console.log(JSON.stringify(touched));`,
     (format) => {
       const result = runInDist(
         format,
-        `const { SentVoiceError, ...subclasses } = await load('@sentdm/voice/errors');
+        `const { SentVoiceError, ...subclasses } = await load('@sentdm/voice-client/errors');
 const result = {};
 for (const [name, ErrorClass] of Object.entries(subclasses)) {
   const error = new ErrorClass();
@@ -78,7 +78,7 @@ console.log(JSON.stringify(result));`,
 
   test.each(formats)('every SentVoice namespace type resolves from the default export as %s', (format) => {
     const file = path.join(distDir, format === 'cjs' ? 'types.cts' : 'types.mts');
-    const source = `import SentVoice from '@sentdm/voice';
+    const source = `import SentVoice from '@sentdm/voice-client';
 export type Types = [${namespaceTypes.map((type) => `SentVoice.${type}`).join(', ')}];`;
     const options = { module: ts.ModuleKind.NodeNext, moduleResolution: ts.ModuleResolutionKind.NodeNext };
     const host = ts.createCompilerHost(options);
@@ -135,8 +135,11 @@ export type Types = [${namespaceTypes.map((type) => `SentVoice.${type}`).join(',
     expect(reached.filter((file) => file.startsWith('adapter/'))).toEqual([]);
   });
 
-  test('the service worker ships as @sentdm/voice/sw.js', () => {
-    const worker = runInDist('cjs', `console.log(JSON.stringify(require.resolve('@sentdm/voice/sw.js')));`);
+  test('the service worker ships as @sentdm/voice-client/sw.js', () => {
+    const worker = runInDist(
+      'cjs',
+      `console.log(JSON.stringify(require.resolve('@sentdm/voice-client/sw.js')));`,
+    );
 
     expect(fs.readFileSync(worker as string, 'utf8')).toBe(
       fs.readFileSync(path.resolve(__dirname, '..', 'src', 'sw.js'), 'utf8'),

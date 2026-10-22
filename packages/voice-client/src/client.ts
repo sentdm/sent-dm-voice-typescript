@@ -57,7 +57,7 @@ export interface SentVoiceOptions {
 
   /**
    * Where your app serves the service worker that delivers incoming calls, a copy of
-   * `@sentdm/voice/sw.js`. `url` is resolved against the page and defaults to `sw.js`;
+   * `@sentdm/voice-client/sw.js`. `url` is resolved against the page and defaults to `sw.js`;
    * `scope` defaults to the worker's folder.
    */
   serviceWorker?: { url?: string | undefined; scope?: string | undefined } | undefined;

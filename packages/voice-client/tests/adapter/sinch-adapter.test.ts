@@ -1,7 +1,16 @@
-import { loadSinchAdapter } from '@sentdm/voice/adapter/sinch';
-import type { AdapterOptions, CallEvent, CallTarget, ProviderAdapter } from '@sentdm/voice/adapter/types';
-import { CapabilityUnsupportedError, MediaPermissionError, SentVoiceError } from '@sentdm/voice/errors';
-import { providerDetailOf } from '@sentdm/voice/provider-detail';
+import { loadSinchAdapter } from '@sentdm/voice-client/adapter/sinch';
+import type {
+  AdapterOptions,
+  CallEvent,
+  CallTarget,
+  ProviderAdapter,
+} from '@sentdm/voice-client/adapter/types';
+import {
+  CapabilityUnsupportedError,
+  MediaPermissionError,
+  SentVoiceError,
+} from '@sentdm/voice-client/errors';
+import { providerDetailOf } from '@sentdm/voice-client/provider-detail';
 import { prefix, voiceToken } from '../voice-token';
 import { describeSharedAdapterTests } from './shared-adapter-tests';
 import {

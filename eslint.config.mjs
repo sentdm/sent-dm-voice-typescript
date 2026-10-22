@@ -13,7 +13,7 @@ const providerImport = {
 };
 
 export default tseslint.config(
-  { ignores: ['dist/'] },
+  { ignores: ['**/dist/'] },
   {
     languageOptions: {
       parser: tseslint.parser,
@@ -31,13 +31,13 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/adapter/sinch.ts'],
+    files: ['packages/voice-client/src/adapter/sinch.ts'],
     rules: {
       'no-restricted-imports': ['error', { patterns: [packageImport] }],
     },
   },
   {
-    files: ['tests/**'],
+    files: ['packages/*/tests/**'],
     rules: {
       'no-restricted-imports': 'off',
     },

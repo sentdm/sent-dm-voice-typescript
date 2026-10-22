@@ -1,14 +1,19 @@
-import SentVoice, { type SentVoiceOptions } from '@sentdm/voice';
-import { loadAdapter } from '@sentdm/voice/adapter/loader';
-import type { CallTarget } from '@sentdm/voice/adapter/types';
-import type { CallStats } from '@sentdm/voice/call';
-import { CallFailedError, MediaPermissionError, NetworkError, SentVoiceError } from '@sentdm/voice/errors';
+import SentVoice, { type SentVoiceOptions } from '@sentdm/voice-client';
+import { loadAdapter } from '@sentdm/voice-client/adapter/loader';
+import type { CallTarget } from '@sentdm/voice-client/adapter/types';
+import type { CallStats } from '@sentdm/voice-client/call';
+import {
+  CallFailedError,
+  MediaPermissionError,
+  NetworkError,
+  SentVoiceError,
+} from '@sentdm/voice-client/errors';
 import { MockAdapter } from './adapter/mock-adapter';
 import fixture from './fixtures/telemetry-batch-request.json';
 import { prefix, voiceToken } from './voice-token';
 
-jest.mock('@sentdm/voice/adapter/loader');
-jest.mock('@sentdm/voice/version', () => ({ VERSION: '0.1.0' }));
+jest.mock('@sentdm/voice-client/adapter/loader');
+jest.mock('@sentdm/voice-client/version', () => ({ VERSION: '0.1.0' }));
 
 type SentEvent = { type: string; call_id?: string; occurred_at: string; payload: Record<string, unknown> };
 

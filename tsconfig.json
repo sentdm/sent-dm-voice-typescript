@@ -1,5 +1,5 @@
 {
-  "include": ["src", "tests"],
+  "include": ["packages/*/src", "packages/*/tests"],
   "exclude": [],
   "compilerOptions": {
     "target": "es2020",
@@ -9,8 +9,8 @@
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "paths": {
-      "@sentdm/voice/*": ["./src/*"],
-      "@sentdm/voice": ["./src/index.ts"]
+      "@sentdm/voice-client/*": ["./packages/voice-client/src/*"],
+      "@sentdm/voice-client": ["./packages/voice-client/src/index.ts"]
     },
     "noEmit": true,
 

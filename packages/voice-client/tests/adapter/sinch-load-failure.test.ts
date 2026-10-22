@@ -1,6 +1,6 @@
-import { loadSinchAdapter } from '@sentdm/voice/adapter/sinch';
-import { NetworkError } from '@sentdm/voice/errors';
-import { providerDetailOf } from '@sentdm/voice/provider-detail';
+import { loadSinchAdapter } from '@sentdm/voice-client/adapter/sinch';
+import { NetworkError } from '@sentdm/voice-client/errors';
+import { providerDetailOf } from '@sentdm/voice-client/provider-detail';
 
 const mockFailure = new TypeError('Failed to fetch dynamically imported module');
 

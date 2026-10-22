@@ -1,10 +1,10 @@
-import SentVoice from '@sentdm/voice';
-import { loadAdapter } from '@sentdm/voice/adapter/loader';
-import { CallFailedError, NetworkError } from '@sentdm/voice/errors';
+import SentVoice from '@sentdm/voice-client';
+import { loadAdapter } from '@sentdm/voice-client/adapter/loader';
+import { CallFailedError, NetworkError } from '@sentdm/voice-client/errors';
 import { MockAdapter, type CallScript } from './adapter/mock-adapter';
 import { voiceToken } from './voice-token';
 
-jest.mock('@sentdm/voice/adapter/loader');
+jest.mock('@sentdm/voice-client/adapter/loader');
 
 const now = Date.parse('2026-09-22T12:00:00Z');
 const dropped = new NetworkError();

@@ -1,10 +1,10 @@
-import SentVoice, { type SentVoiceOptions } from '@sentdm/voice';
-import { loadAdapter } from '@sentdm/voice/adapter/loader';
-import { CapabilityUnsupportedError, SentVoiceError } from '@sentdm/voice/errors';
+import SentVoice, { type SentVoiceOptions } from '@sentdm/voice-client';
+import { loadAdapter } from '@sentdm/voice-client/adapter/loader';
+import { CapabilityUnsupportedError, SentVoiceError } from '@sentdm/voice-client/errors';
 import { MockAdapter } from './adapter/mock-adapter';
 import { prefix, voiceToken } from './voice-token';
 
-jest.mock('@sentdm/voice/adapter/loader');
+jest.mock('@sentdm/voice-client/adapter/loader');
 
 class FakeMediaDevices extends EventTarget {
   devices: MediaDeviceInfo[] = [];

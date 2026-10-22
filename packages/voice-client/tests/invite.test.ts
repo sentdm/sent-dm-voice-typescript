@@ -1,10 +1,10 @@
-import SentVoice from '@sentdm/voice';
-import { loadAdapter } from '@sentdm/voice/adapter/loader';
-import { CallFailedError, MediaPermissionError, NetworkError } from '@sentdm/voice/errors';
+import SentVoice from '@sentdm/voice-client';
+import { loadAdapter } from '@sentdm/voice-client/adapter/loader';
+import { CallFailedError, MediaPermissionError, NetworkError } from '@sentdm/voice-client/errors';
 import { MockAdapter, type CallScript } from './adapter/mock-adapter';
 import { prefix, voiceToken } from './voice-token';
 
-jest.mock('@sentdm/voice/adapter/loader');
+jest.mock('@sentdm/voice-client/adapter/loader');
 
 const hangsUp: CallScript = [{ type: 'ended', reason: 'completed', after: 1_000 }];
 const dropped = new NetworkError();

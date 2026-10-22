@@ -1,6 +1,6 @@
 # Sinch adapter
 
-Internal notes on `src/adapter/sinch.ts`, the only code that touches `sinch-rtc`. Nothing here is part of
+Internal notes on `packages/voice-client/src/adapter/sinch.ts`, the only code that touches `sinch-rtc`. Nothing here is part of
 the public surface, and none of it ships in the package.
 
 Findings marked _source_ come from reading `sinch-rtc` 2.49.11. They stay provisional until the manual
@@ -41,7 +41,7 @@ the WebRTC bundle out of pages that never register. A load that fails rejects wi
 - _Source:_ `sinch-rtc` only subscribes to incoming invites from its push handler, so receiving calls needs
   managed push: `setSupportManagedPush()` before `start()`, a service worker served by the app, and the
   browser's notification permission.
-- Apps serve a copy of `@sentdm/voice/sw.js` (`src/sw.js`, Sinch's documented basic worker: it forwards each push
+- Apps serve a copy of `@sentdm/voice-client/sw.js` (`packages/voice-client/src/sw.js`, Sinch's documented basic worker: it forwards each push
   payload to the open pages). `serviceWorker.url` is resolved against the page and defaults to `sw.js`;
   `serviceWorker.scope` defaults to the worker's folder. Pick a path that does not replace the app's own worker.
 - If push cannot be set up (no service worker support, missing worker file, permission denied, or no user

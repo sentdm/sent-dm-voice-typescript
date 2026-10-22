@@ -1,4 +1,4 @@
-import { TypedEmitter } from '@sentdm/voice/events';
+import { TypedEmitter } from '@sentdm/voice-client/events';
 
 interface TestEvents {
   ready: () => void;

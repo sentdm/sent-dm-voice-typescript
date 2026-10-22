@@ -1,0 +1,60 @@
+{
+  "name": "@sentdm/voice-client",
+  "version": "0.1.1",
+  "description": "Sent Voice Client for the web: calls and incoming calls inside your app",
+  "author": "Sent <support@sent.dm>",
+  "types": "dist/index.d.ts",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sentdm/sent-dm-voice-typescript.git",
+    "directory": "packages/voice-client"
+  },
+  "license": "Apache-2.0",
+  "files": [
+    "**/*"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "bowser": "2.14.1",
+    "sinch-rtc": "2.49.11"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./errors": {
+      "require": {
+        "types": "./dist/errors.d.ts",
+        "default": "./dist/errors.js"
+      },
+      "types": "./dist/errors.d.mts",
+      "default": "./dist/errors.mjs"
+    },
+    "./react": {
+      "require": {
+        "types": "./dist/react/index.d.ts",
+        "default": "./dist/react/index.js"
+      },
+      "types": "./dist/react/index.d.mts",
+      "default": "./dist/react/index.mjs"
+    },
+    "./sw.js": "./dist/sw.js"
+  }
+}

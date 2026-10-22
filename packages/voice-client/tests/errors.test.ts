@@ -1,5 +1,5 @@
-import * as root from '@sentdm/voice';
-import { SentVoice } from '@sentdm/voice/client';
+import * as root from '@sentdm/voice-client';
+import { SentVoice } from '@sentdm/voice-client/client';
 import {
   CallFailedError,
   CallRejectedError,
@@ -12,8 +12,8 @@ import {
   TokenInvalidError,
   type SentVoiceErrorCategory,
   type SentVoiceErrorCode,
-} from '@sentdm/voice/errors';
-import { providerDetailOf } from '@sentdm/voice/provider-detail';
+} from '@sentdm/voice-client/errors';
+import { providerDetailOf } from '@sentdm/voice-client/provider-detail';
 
 type Equals<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 

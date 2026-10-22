@@ -1,5 +1,5 @@
-import type { CallEvent, CallTarget } from '@sentdm/voice/adapter/types';
-import { CallFailedError, NetworkError } from '@sentdm/voice/errors';
+import type { CallEvent, CallTarget } from '@sentdm/voice-client/adapter/types';
+import { CallFailedError, NetworkError } from '@sentdm/voice-client/errors';
 import { MockAdapter, type CallScript, type FailableMethod } from './mock-adapter';
 import { describeSharedAdapterTests } from './shared-adapter-tests';
 

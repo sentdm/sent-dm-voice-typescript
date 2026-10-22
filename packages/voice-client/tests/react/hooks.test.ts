@@ -3,20 +3,20 @@
  */
 import { act, render, renderHook } from '@testing-library/react';
 import { createElement, type ComponentProps, type ReactNode } from 'react';
-import SentVoice from '@sentdm/voice';
-import { loadAdapter } from '@sentdm/voice/adapter/loader';
-import { TokenInvalidError } from '@sentdm/voice/errors';
+import SentVoice from '@sentdm/voice-client';
+import { loadAdapter } from '@sentdm/voice-client/adapter/loader';
+import { TokenInvalidError } from '@sentdm/voice-client/errors';
 import {
   SentVoiceProvider,
   useActiveCall,
   useAudioDevices,
   useIncomingCall,
   useSentVoice,
-} from '@sentdm/voice/react';
+} from '@sentdm/voice-client/react';
 import { MockAdapter, type CallScript } from '../adapter/mock-adapter';
 import { prefix, voiceToken } from '../voice-token';
 
-jest.mock('@sentdm/voice/adapter/loader');
+jest.mock('@sentdm/voice-client/adapter/loader');
 
 const hangsUp: CallScript = [{ type: 'ended', reason: 'completed', after: 1_000 }];
 

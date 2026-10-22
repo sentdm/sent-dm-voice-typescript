@@ -1,18 +1,18 @@
-import SentVoice, { type SentVoiceOptions } from '@sentdm/voice';
-import { loadAdapter } from '@sentdm/voice/adapter/loader';
-import type { CallEvent, CallTarget } from '@sentdm/voice/adapter/types';
+import SentVoice, { type SentVoiceOptions } from '@sentdm/voice-client';
+import { loadAdapter } from '@sentdm/voice-client/adapter/loader';
+import type { CallEvent, CallTarget } from '@sentdm/voice-client/adapter/types';
 import {
   NetworkError,
   NotRegisteredError,
   SentVoiceError,
   TokenExpiredError,
   TokenInvalidError,
-} from '@sentdm/voice/errors';
+} from '@sentdm/voice-client/errors';
 import { version } from '../package.json';
 import { MockAdapter } from './adapter/mock-adapter';
 import { prefix, voiceToken } from './voice-token';
 
-jest.mock('@sentdm/voice/adapter/loader');
+jest.mock('@sentdm/voice-client/adapter/loader');
 
 type PendingFetch = { resolve: (jwt: string) => void; reject: (error: Error) => void };
 

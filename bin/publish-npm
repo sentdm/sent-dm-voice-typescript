@@ -10,60 +10,53 @@ elif [[ ! ${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-} ]]; then
 fi
 
 pnpm build
-cd dist
 
-# Get package name and version from package.json
-PACKAGE_NAME="$(jq -r -e '.name' ./package.json)"
-VERSION="$(jq -r -e '.version' ./package.json)"
+# Install an OIDC compatible npm version
+npm install --prefix ./oidc/ npm@11.6.2
+NPM_PATH="$(pwd)/oidc/node_modules/.bin/npm"
 
-# Get latest version from npm
-#
-# If the package doesn't exist, npm will return:
-# {
-#   "error": {
-#     "code": "E404",
-#     "summary": "Unpublished on 2025-06-05T09:54:53.528Z",
-#     "detail": "'the_package' is not in this registry..."
-#   }
-# }
-NPM_INFO="$(npm view "$PACKAGE_NAME" version --json 2>/dev/null || true)"
+# Every package whose version is not on npm yet is published, in dependency order, so a
+# re-run after a partial failure picks up where it stopped.
+for package in $(./scripts/utils/packages); do
+  cd "packages/$package/dist"
 
-# Check if we got an E404 error
-if echo "$NPM_INFO" | jq -e '.error.code == "E404"' > /dev/null 2>&1; then
-  # Package doesn't exist yet, no last version
-  LAST_VERSION=""
-elif echo "$NPM_INFO" | jq -e '.error' > /dev/null 2>&1; then
-  # Report other errors
-  echo "ERROR: npm returned unexpected data:"
-  echo "$NPM_INFO"
-  exit 1
-else
-  # Success - get the version
-  LAST_VERSION=$(echo "$NPM_INFO" | jq -r '.') # strip quotes
-fi
+  PACKAGE_NAME="$(jq -r -e '.name' ./package.json)"
+  VERSION="$(jq -r -e '.version' ./package.json)"
 
-# Check if current version is pre-release (e.g. alpha / beta / rc)
-CURRENT_IS_PRERELEASE=false
-if [[ "$VERSION" =~ -([a-zA-Z]+) ]]; then
-  CURRENT_IS_PRERELEASE=true
-  CURRENT_TAG="${BASH_REMATCH[1]}"
-fi
+  if npm view "$PACKAGE_NAME@$VERSION" version >/dev/null 2>&1; then
+    echo "$PACKAGE_NAME@$VERSION is already published, skipping"
+    cd - >/dev/null
+    continue
+  fi
 
-# Check if last version is a stable release
-LAST_IS_STABLE_RELEASE=true
-if [[ -z "$LAST_VERSION" || "$LAST_VERSION" =~ -([a-zA-Z]+) ]]; then
-  LAST_IS_STABLE_RELEASE=false
-fi
+  # Get the latest version from npm. A package that doesn't exist yet answers E404.
+  NPM_INFO="$(npm view "$PACKAGE_NAME" version --json 2>/dev/null || true)"
+  if echo "$NPM_INFO" | jq -e '.error.code == "E404"' >/dev/null 2>&1; then
+    LAST_VERSION=""
+  elif echo "$NPM_INFO" | jq -e '.error' >/dev/null 2>&1; then
+    echo "ERROR: npm returned unexpected data:"
+    echo "$NPM_INFO"
+    exit 1
+  else
+    LAST_VERSION=$(echo "$NPM_INFO" | jq -r '.')
+  fi
 
-# Use a corresponding alpha/beta tag if there already is a stable release and we're publishing a prerelease.
-if $CURRENT_IS_PRERELEASE && $LAST_IS_STABLE_RELEASE; then
-  TAG="$CURRENT_TAG"
-else
-  TAG="latest"
-fi
+  # Use a corresponding alpha/beta tag if there already is a stable release and this is a prerelease.
+  CURRENT_IS_PRERELEASE=false
+  if [[ "$VERSION" =~ -([a-zA-Z]+) ]]; then
+    CURRENT_IS_PRERELEASE=true
+    CURRENT_TAG="${BASH_REMATCH[1]}"
+  fi
+  LAST_IS_STABLE_RELEASE=true
+  if [[ -z "$LAST_VERSION" || "$LAST_VERSION" =~ -([a-zA-Z]+) ]]; then
+    LAST_IS_STABLE_RELEASE=false
+  fi
+  if $CURRENT_IS_PRERELEASE && $LAST_IS_STABLE_RELEASE; then
+    TAG="$CURRENT_TAG"
+  else
+    TAG="latest"
+  fi
 
-# Install OIDC compatible npm version
-npm install --prefix ../oidc/ npm@11.6.2
-
-# Publish with the appropriate tag
-pnpm publish --npm-path "$(cd ../ && pwd)/oidc/node_modules/.bin/npm" --no-git-checks --tag "$TAG"
+  pnpm publish --npm-path "$NPM_PATH" --no-git-checks --tag "$TAG"
+  cd - >/dev/null
+done

@@ -14,8 +14,10 @@ for (const key of ['types', 'main', 'module']) {
 }
 
 delete pkgJson.devDependencies;
-delete pkgJson.scripts.prepack;
-delete pkgJson.scripts.prepublishOnly;
-delete pkgJson.scripts.prepare;
+if (pkgJson.scripts) {
+  delete pkgJson.scripts.prepack;
+  delete pkgJson.scripts.prepublishOnly;
+  delete pkgJson.scripts.prepare;
+}
 
 console.log(JSON.stringify(pkgJson, null, 2));

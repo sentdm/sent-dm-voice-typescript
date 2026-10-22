@@ -1,4 +1,9 @@
-import type { CallEvent, CallTarget, IncomingCall, ProviderAdapter } from '@sentdm/voice/adapter/types';
+import type {
+  CallEvent,
+  CallTarget,
+  IncomingCall,
+  ProviderAdapter,
+} from '@sentdm/voice-client/adapter/types';
 import { voiceToken } from '../voice-token';
 
 const prefix = '0f8fad5b-d9cb-469f-a165-70867728950e';

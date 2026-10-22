@@ -1,12 +1,12 @@
 {
-  "extends": "./tsconfig.json",
+  "extends": "../../tsconfig.json",
   "include": ["dist/src"],
   "exclude": [],
   "compilerOptions": {
     "rootDir": "./dist/src",
     "paths": {
-      "@sentdm/voice/*": ["./dist/src/*"],
-      "@sentdm/voice": ["./dist/src/index.ts"]
+      "@sentdm/voice-client/*": ["./dist/src/*"],
+      "@sentdm/voice-client": ["./dist/src/index.ts"]
     },
     "noEmit": false,
     "declaration": true,

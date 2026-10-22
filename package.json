@@ -1,41 +1,16 @@
 {
-  "name": "@sentdm/voice",
-  "version": "0.1.1",
-  "description": "The official TypeScript client SDK for Sent Voice",
-  "author": "Sent <support@sent.dm>",
-  "types": "dist/index.d.ts",
-  "main": "dist/index.js",
-  "type": "commonjs",
-  "repository": "github:sentdm/sent-dm-voice-typescript",
+  "name": "sent-dm-voice-typescript",
+  "private": true,
+  "description": "Sent Voice Client SDKs for TypeScript: the web client, its React bindings and their shared core",
   "license": "Apache-2.0",
+  "repository": "github:sentdm/sent-dm-voice-typescript",
   "packageManager": "pnpm@10.30.1",
-  "files": [
-    "**/*"
-  ],
-  "private": false,
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "test": "./scripts/test",
     "build": "./scripts/build",
-    "prepublishOnly": "echo 'to publish, run pnpm build && (cd dist; pnpm publish)' && exit 1",
     "format": "./scripts/format",
-    "prepare": "if ./scripts/utils/check-is-in-git-install.sh; then ./scripts/build && ./scripts/utils/git-swap.sh; fi",
     "lint": "./scripts/lint",
     "fix": "./scripts/format"
-  },
-  "dependencies": {
-    "bowser": "2.14.1",
-    "sinch-rtc": "2.49.11"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.0",
@@ -74,32 +49,5 @@
   },
   "resolutions": {
     "minimatch": "^9.0.5"
-  },
-  "exports": {
-    ".": {
-      "require": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "types": "./dist/index.d.mts",
-      "default": "./dist/index.mjs"
-    },
-    "./errors": {
-      "require": {
-        "types": "./dist/errors.d.ts",
-        "default": "./dist/errors.js"
-      },
-      "types": "./dist/errors.d.mts",
-      "default": "./dist/errors.mjs"
-    },
-    "./react": {
-      "require": {
-        "types": "./dist/react/index.d.ts",
-        "default": "./dist/react/index.js"
-      },
-      "types": "./dist/react/index.d.mts",
-      "default": "./dist/react/index.mjs"
-    },
-    "./sw.js": "./dist/sw.js"
   }
 }
