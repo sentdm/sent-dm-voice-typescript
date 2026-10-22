@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   release-please:
-    if: github.repository == 'sentdm/sent-dm-voice-sdk'
+    if: github.repository == 'sentdm/sent-dm-voice-typescript'
     runs-on: ubuntu-latest
 
     steps:
