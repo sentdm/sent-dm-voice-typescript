@@ -8,6 +8,12 @@ on:
   release:
     types: [published]
 
+# One release per package arrives at once. Runs queue, so the first publishes every new version
+# and the rest find nothing left to publish.
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
+
 jobs:
   publish:
     name: publish

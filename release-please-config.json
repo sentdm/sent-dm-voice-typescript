@@ -1,24 +1,34 @@
 {
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "packages": {
     "packages/voice-client-core": {
       "component": "voice-client-core"
     },
     "packages/voice-client": {
-      "component": "voice-client"
+      "component": "voice-client",
+      "extra-files": ["src/version.ts"]
     },
     "packages/voice-client-react": {
       "component": "voice-client-react"
     }
   },
-  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "plugins": [
+    {
+      "type": "linked-versions",
+      "groupName": "voice-client",
+      "components": ["voice-client-core", "voice-client", "voice-client-react"]
+    }
+  ],
   "include-v-in-tag": true,
-  "include-component-in-tag": false,
+  "include-component-in-tag": true,
   "versioning": "prerelease",
   "prerelease": false,
   "bump-minor-pre-major": true,
   "bump-patch-for-minor-pre-major": false,
   "pull-request-header": "Automated Release PR",
   "pull-request-title-pattern": "release: ${version}",
+  "group-pull-request-title-pattern": "release: ${branch}",
+  "release-type": "node",
   "changelog-sections": [
     {
       "type": "feat",
@@ -66,7 +76,5 @@
       "section": "Continuous Integration",
       "hidden": true
     }
-  ],
-  "release-type": "node",
-  "extra-files": ["src/version.ts"]
+  ]
 }
