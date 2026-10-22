@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.2](https://github.com/sentdm/sent-dm-voice-typescript/compare/v0.1.1...v0.1.2) (2026-10-22)
+
+
+### Chores
+
+* follow the repo rename to sent-dm-voice-typescript ([3ef08a4](https://github.com/sentdm/sent-dm-voice-typescript/commit/3ef08a463facb235295c6f2d52c2b18b671b489a))
+
+
+### Documentation
+
+* clarify incoming call handling ([931c309](https://github.com/sentdm/sent-dm-voice-typescript/commit/931c30926d6c60304516a92bacbe82c5aaed04e0))
+
 ## [0.1.1](https://github.com/sentdm/sent-dm-voice-sdk/compare/v0.1.0...v0.1.1) (2026-09-29)
 
 
