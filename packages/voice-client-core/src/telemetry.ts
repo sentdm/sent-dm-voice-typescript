@@ -4,7 +4,7 @@ import { SentVoiceError } from './errors';
 import type { Log } from './log';
 import { providerDetailOf } from './provider-detail';
 
-/** One sample of a call's media quality. */
+/** One sample of a call's media quality: jitter and rtt in milliseconds, packetLoss as a fraction between 0 and 1. */
 export interface CallStats {
   jitter: number;
   packetLoss: number;

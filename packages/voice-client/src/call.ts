@@ -18,7 +18,6 @@ export type Address =
   | { kind: 'number'; number: string }
   | { kind: 'conference'; name: string };
 
-/** Jitter and rtt in milliseconds, packetLoss as a fraction between 0 and 1. */
 export interface DisconnectInfo {
   state: 'completed' | 'failed' | 'busy' | 'noAnswer';
   error?: SentVoiceError;
