@@ -123,6 +123,7 @@ export class Call extends TypedEmitter<CallEvents> {
   #update(state: Exclude<CallState, 'initiated'>, error?: SentVoiceError): void {
     const previous = this.#state;
     if (
+      isEnded(previous) ||
       (state === 'ringing' && previous !== 'initiated') ||
       (state === 'answered' && previous !== 'initiated' && previous !== 'ringing') ||
       (state === 'connected' && previous === 'connected') ||
