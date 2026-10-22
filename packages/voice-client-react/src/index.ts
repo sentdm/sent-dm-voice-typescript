@@ -14,7 +14,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { SentVoice, type SentVoiceOptions } from '../index';
+import { SentVoice, type SentVoiceOptions } from '@sentdm/voice-client';
 
 interface SentVoiceProviderProps extends SentVoiceOptions {
   /**

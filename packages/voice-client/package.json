@@ -22,14 +22,6 @@
     "@sentdm/voice-client-core": "workspace:*",
     "sinch-rtc": "2.49.11"
   },
-  "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    }
-  },
   "exports": {
     ".": {
       "require": {
@@ -46,14 +38,6 @@
       },
       "types": "./dist/errors.d.mts",
       "default": "./dist/errors.mjs"
-    },
-    "./react": {
-      "require": {
-        "types": "./dist/react/index.d.ts",
-        "default": "./dist/react/index.js"
-      },
-      "types": "./dist/react/index.d.mts",
-      "default": "./dist/react/index.mjs"
     },
     "./sw.js": "./dist/sw.js"
   }

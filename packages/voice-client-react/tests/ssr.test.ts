@@ -6,7 +6,7 @@ import {
   useAudioDevices,
   useIncomingCall,
   useSentVoice,
-} from '@sentdm/voice-client/react';
+} from '@sentdm/voice-client-react';
 
 test('the provider and every hook render on the server without touching window, document or navigator', () => {
   const touched: string[] = [];

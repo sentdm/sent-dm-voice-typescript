@@ -3,9 +3,11 @@
 Calls for the people in your app: place, answer and manage phone and in-app calls from the browser, with
 React bindings.
 
-| Package                                         | What it is                                                                            |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [`@sentdm/voice-client`](packages/voice-client) | The web client: register, place and answer calls, audio devices, incoming-call alerts |
+| Package                                                     | What it is                                                                                 |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [`@sentdm/voice-client`](packages/voice-client)             | The web client: register, place and answer calls, audio devices, incoming-call alerts      |
+| [`@sentdm/voice-client-react`](packages/voice-client-react) | React bindings: a provider and hooks that re-render on call events                         |
+| [`@sentdm/voice-client-core`](packages/voice-client-core)   | The shared core of both: errors, events, tokens, telemetry. Internal to them, not for apps |
 
 Read the [Voice docs](https://docs.sent.dm) to get started.
 

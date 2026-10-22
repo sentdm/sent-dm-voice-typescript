@@ -12,9 +12,9 @@ import {
   useAudioDevices,
   useIncomingCall,
   useSentVoice,
-} from '@sentdm/voice-client/react';
-import { MockAdapter, type CallScript } from '../adapter/mock-adapter';
-import { prefix, voiceToken } from '../../../voice-client-core/tests/voice-token';
+} from '@sentdm/voice-client-react';
+import { MockAdapter, type CallScript } from '../../voice-client/tests/adapter/mock-adapter';
+import { prefix, voiceToken } from '../../voice-client-core/tests/voice-token';
 
 jest.mock('@sentdm/voice-client/adapter/loader');
 

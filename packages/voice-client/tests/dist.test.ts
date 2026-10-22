@@ -5,7 +5,7 @@ import ts from 'typescript';
 import * as errors from '@sentdm/voice-client/errors';
 
 const distDir = path.resolve(__dirname, '..', 'dist');
-const entries = ['@sentdm/voice-client', '@sentdm/voice-client/errors', '@sentdm/voice-client/react'];
+const entries = ['@sentdm/voice-client', '@sentdm/voice-client/errors'];
 const formats = ['cjs', 'esm'] as const;
 const namespaceTypes = [
   'ConnectParams',

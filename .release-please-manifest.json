@@ -1,4 +1,5 @@
 {
   "packages/voice-client-core": "0.1.1",
-  "packages/voice-client": "0.1.1"
+  "packages/voice-client": "0.1.1",
+  "packages/voice-client-react": "0.1.1"
 }

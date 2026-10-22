@@ -22,6 +22,7 @@ const providerImport = {
 const restricted = {
   'voice-client-core': [selfImport('@sentdm/voice-client-core'), clientFromCore],
   'voice-client': [selfImport('@sentdm/voice-client')],
+  'voice-client-react': [selfImport('@sentdm/voice-client-react')],
 };
 
 export default tseslint.config(
