@@ -1,7 +1,5 @@
 /// <reference lib="dom" />
-import { CapabilityUnsupportedError } from './errors';
-import { TypedEmitter } from './events';
-import type { Log } from './log';
+import { CapabilityUnsupportedError, TypedEmitter, type Log } from '@sentdm/voice-client-core';
 
 export interface AudioControllerEvents {
   deviceChanged: () => void;

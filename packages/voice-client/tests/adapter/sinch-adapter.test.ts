@@ -10,8 +10,8 @@ import {
   MediaPermissionError,
   SentVoiceError,
 } from '@sentdm/voice-client/errors';
-import { providerDetailOf } from '@sentdm/voice-client/provider-detail';
-import { prefix, voiceToken } from '../voice-token';
+import { providerDetailOf } from '@sentdm/voice-client-core';
+import { prefix, voiceToken } from '../../../voice-client-core/tests/voice-token';
 import { describeSharedAdapterTests } from './shared-adapter-tests';
 import {
   CallEndCause,

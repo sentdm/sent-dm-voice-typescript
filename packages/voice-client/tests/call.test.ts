@@ -2,7 +2,7 @@ import SentVoice from '@sentdm/voice-client';
 import { loadAdapter } from '@sentdm/voice-client/adapter/loader';
 import { CallFailedError, NetworkError } from '@sentdm/voice-client/errors';
 import { MockAdapter, type CallScript } from './adapter/mock-adapter';
-import { voiceToken } from './voice-token';
+import { voiceToken } from '../../voice-client-core/tests/voice-token';
 
 jest.mock('@sentdm/voice-client/adapter/loader');
 

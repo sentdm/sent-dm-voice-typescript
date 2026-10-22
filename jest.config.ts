@@ -7,6 +7,7 @@ const config: JestConfigWithTsJest = {
     '^.+\\.(t|j)sx?$': ['@swc/jest', { sourceMaps: 'inline' }],
   },
   moduleNameMapper: {
+    '^@sentdm/voice-client-core$': '<rootDir>/packages/voice-client-core/src/index.ts',
     '^@sentdm/voice-client$': '<rootDir>/packages/voice-client/src/index.ts',
     '^@sentdm/voice-client/(.*)$': '<rootDir>/packages/voice-client/src/$1',
   },

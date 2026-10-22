@@ -1,5 +1,6 @@
-import type { SentVoiceError } from './errors';
-import { TypedEmitter } from './events';
+import { type CallStats, type SentVoiceError, TypedEmitter } from '@sentdm/voice-client-core';
+
+export type { CallStats };
 
 export type CallState =
   | 'initiated'
@@ -18,12 +19,6 @@ export type Address =
   | { kind: 'conference'; name: string };
 
 /** Jitter and rtt in milliseconds, packetLoss as a fraction between 0 and 1. */
-export interface CallStats {
-  jitter: number;
-  packetLoss: number;
-  rtt: number;
-}
-
 export interface DisconnectInfo {
   state: 'completed' | 'failed' | 'busy' | 'noAnswer';
   error?: SentVoiceError;

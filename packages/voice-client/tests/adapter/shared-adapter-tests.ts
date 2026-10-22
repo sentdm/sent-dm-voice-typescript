@@ -4,7 +4,7 @@ import type {
   IncomingCall,
   ProviderAdapter,
 } from '@sentdm/voice-client/adapter/types';
-import { voiceToken } from '../voice-token';
+import { voiceToken } from '../../../voice-client-core/tests/voice-token';
 
 const prefix = '0f8fad5b-d9cb-469f-a165-70867728950e';
 const caller = `${prefix}_agent-42`;

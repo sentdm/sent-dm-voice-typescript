@@ -1,5 +1,5 @@
-import { TokenInvalidError } from '@sentdm/voice-client/errors';
-import { decodeToken } from '@sentdm/voice-client/token';
+import { TokenInvalidError } from '@sentdm/voice-client-core';
+import { decodeToken } from '@sentdm/voice-client-core';
 import { issuer, prefix, voiceToken } from './voice-token';
 
 const payload = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');

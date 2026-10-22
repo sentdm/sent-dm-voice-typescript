@@ -1,10 +1,25 @@
 /// <reference lib="dom" />
 import Bowser from 'bowser';
-import type { Call, CallStats } from './call';
 import { SentVoiceError } from './errors';
 import type { Log } from './log';
 import { providerDetailOf } from './provider-detail';
-import { VERSION } from './version';
+
+/** One sample of a call's media quality. */
+export interface CallStats {
+  jitter: number;
+  packetLoss: number;
+  rtt: number;
+}
+
+/** What telemetry reads from a call. The web client's `Call` satisfies it as it is. */
+export interface TelemetryCall {
+  readonly id: string;
+  readonly direction: 'inbound' | 'outbound';
+  on(event: 'connected', listener: () => void): unknown;
+  on(event: 'disconnected', listener: (info: { state: string }) => void): unknown;
+  on(event: 'error', listener: (error: SentVoiceError) => void): unknown;
+  getStats(): Promise<CallStats>;
+}
 
 type EventType =
   | 'register.completed'
@@ -154,15 +169,15 @@ const errorFields = (error: SentVoiceError): Payload => {
   return fields;
 };
 
-const body = (entries: Entry[]) =>
-  JSON.stringify({ sdk_version: VERSION, events: entries.map(({ event }) => event) });
+const body = (entries: Entry[], sdkVersion: string) =>
+  JSON.stringify({ sdk_version: sdkVersion, events: entries.map(({ event }) => event) });
 
 const byteLength = (text: string) => new TextEncoder().encode(text).length;
 
 // The entries in order, cut into batches whose bodies stay under the cap. One over the cap by itself is
 // sent alone.
-const split = (entries: Entry[]): Entry[][] => {
-  const overhead = byteLength(body([]));
+const split = (entries: Entry[], sdkVersion: string): Entry[][] => {
+  const overhead = byteLength(body([], sdkVersion));
   const batches: Entry[][] = [];
   let batch: Entry[] = [];
   let size = overhead;
@@ -183,6 +198,7 @@ const split = (entries: Entry[]): Entry[][] => {
 export class Telemetry {
   #url: string;
   #log: Log;
+  #sdkVersion: string;
   #token: string | undefined;
   #queue: Entry[] = [];
   #timer: ReturnType<typeof setInterval> | undefined;
@@ -193,10 +209,12 @@ export class Telemetry {
     if (document.visibilityState === 'hidden') this.#flush(true);
   };
 
-  constructor(baseURL: string | undefined, log: Log) {
+  /** `sdkVersion` is the version of the client package the reports come from. */
+  constructor(baseURL: string | undefined, log: Log, sdkVersion: string) {
     const base = baseURL || defaultBaseURL;
     this.#url = base + (base.endsWith('/') ? path.slice(1) : path);
     this.#log = log;
+    this.#sdkVersion = sdkVersion;
   }
 
   useToken(jwt: string): void {
@@ -231,7 +249,7 @@ export class Telemetry {
     if (error instanceof SentVoiceError) this.#record('client.error', errorFields(error), callId);
   }
 
-  callStarted(call: Call): void {
+  callStarted(call: TelemetryCall): void {
     const { id, direction } = call;
     const startedAt = Date.now();
     const samples: CallStats[] = [];
@@ -319,7 +337,7 @@ export class Telemetry {
     if (!token || !this.#queue.length) return;
     const entries = this.#queue;
     this.#queue = [];
-    for (const batch of split(entries)) void this.#send(token, batch, keepalive);
+    for (const batch of split(entries, this.#sdkVersion)) void this.#send(token, batch, keepalive);
   }
 
   async #send(token: string, entries: Entry[], keepalive: boolean): Promise<void> {
@@ -327,7 +345,7 @@ export class Telemetry {
       const response = await fetch(this.#url, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: body(entries),
+        body: body(entries, this.#sdkVersion),
         keepalive,
       });
       if (response.ok) return;

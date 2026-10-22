@@ -19,7 +19,7 @@
     "access": "public"
   },
   "dependencies": {
-    "bowser": "2.14.1",
+    "@sentdm/voice-client-core": "workspace:*",
     "sinch-rtc": "2.49.11"
   },
   "peerDependencies": {

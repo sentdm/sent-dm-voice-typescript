@@ -9,6 +9,7 @@
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "paths": {
+      "@sentdm/voice-client-core": ["./packages/voice-client-core/src/index.ts"],
       "@sentdm/voice-client/*": ["./packages/voice-client/src/*"],
       "@sentdm/voice-client": ["./packages/voice-client/src/index.ts"]
     },

@@ -8,8 +8,8 @@ import {
   NetworkError,
   NotRegisteredError,
   SentVoiceError,
-} from '../errors';
-import { readClaims } from '../token';
+  readClaims,
+} from '@sentdm/voice-client-core';
 import type {
   AdapterFactory,
   AdapterOptions,

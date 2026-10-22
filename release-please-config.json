@@ -1,5 +1,8 @@
 {
   "packages": {
+    "packages/voice-client-core": {
+      "component": "voice-client-core"
+    },
     "packages/voice-client": {
       "component": "voice-client"
     }

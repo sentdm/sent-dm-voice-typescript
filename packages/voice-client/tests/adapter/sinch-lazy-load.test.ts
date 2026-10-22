@@ -1,5 +1,5 @@
 import SentVoice from '@sentdm/voice-client';
-import { voiceToken } from '../voice-token';
+import { voiceToken } from '../../../voice-client-core/tests/voice-token';
 
 const mockLoaded = jest.fn();
 

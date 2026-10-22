@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 import type { CallStats, QualityWarning } from '../call';
-import type { SentVoiceError } from '../errors';
+import { type SentVoiceError } from '@sentdm/voice-client-core';
 
 /**
  * The seam between the SDK core and a calling provider. It covers only what the public surface

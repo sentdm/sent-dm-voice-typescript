@@ -1,6 +1,5 @@
 import type { Address, Call } from './call';
-import { CallFailedError, type SentVoiceError } from './errors';
-import { TypedEmitter } from './events';
+import { CallFailedError, type SentVoiceError, TypedEmitter } from '@sentdm/voice-client-core';
 
 export interface CancelInfo {
   error?: SentVoiceError;

@@ -10,12 +10,17 @@ import {
   type DisconnectInfo,
   type QualityWarning,
 } from './call';
-import { NotRegisteredError, SentVoiceError, TokenExpiredError } from './errors';
-import { TypedEmitter } from './events';
-import { CallInvite, type CancelInfo } from './invite';
-import { createLog, parseLogLevel, type Log, type Logger, type LogLevel } from './log';
-import { Telemetry } from './telemetry';
 import {
+  NotRegisteredError,
+  SentVoiceError,
+  TokenExpiredError,
+  TypedEmitter,
+  createLog,
+  parseLogLevel,
+  type Log,
+  type Logger,
+  type LogLevel,
+  Telemetry,
   fetchToken,
   offlineRetryDelay,
   qualify,
@@ -23,7 +28,9 @@ import {
   retryDelay,
   unqualify,
   type VoiceToken,
-} from './token';
+  isE164,
+} from '@sentdm/voice-client-core';
+import { CallInvite, type CancelInfo } from './invite';
 import { VERSION } from './version';
 
 export interface SentVoiceOptions {
@@ -111,7 +118,6 @@ const callInProgress = () =>
     message: 'A call is in progress or an incoming call is waiting; end or decline it first.',
   });
 
-const numberPattern = /^\+[1-9]\d{1,14}$/;
 const namePattern = /^[A-Za-z0-9_-]+$/;
 const identityMaxLength = 200;
 const roomMaxLength = 27;
@@ -166,7 +172,7 @@ export class SentVoice extends TypedEmitter<SentVoiceEvents> {
       },
       onLifecycle: (lifecycle) => (this.#audioLifecycle = lifecycle),
     });
-    if (!telemetry?.disabled) this.#telemetry = new Telemetry(telemetry?.baseURL, this.#log);
+    if (!telemetry?.disabled) this.#telemetry = new Telemetry(telemetry?.baseURL, this.#log, VERSION);
   }
 
   get state(): SentVoice.ClientState {
@@ -223,7 +229,7 @@ export class SentVoice extends TypedEmitter<SentVoiceEvents> {
   /** Calls a phone number in E.164 format or another user of your app. */
   async connect({ to }: SentVoice.ConnectParams): Promise<Call> {
     if (to.startsWith('+')) {
-      if (!numberPattern.test(to)) {
+      if (!isE164(to)) {
         throw invalidAddress(`'to' must be a phone number in E.164 format (e.g. +14155551234).`);
       }
       return this.#place({ kind: 'number', number: to }, (adapter) =>

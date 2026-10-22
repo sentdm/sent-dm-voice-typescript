@@ -14,7 +14,7 @@ import {
   useSentVoice,
 } from '@sentdm/voice-client/react';
 import { MockAdapter, type CallScript } from '../adapter/mock-adapter';
-import { prefix, voiceToken } from '../voice-token';
+import { prefix, voiceToken } from '../../../voice-client-core/tests/voice-token';
 
 jest.mock('@sentdm/voice-client/adapter/loader');
 

@@ -13,7 +13,7 @@ import {
   type SentVoiceErrorCategory,
   type SentVoiceErrorCode,
 } from '@sentdm/voice-client/errors';
-import { providerDetailOf } from '@sentdm/voice-client/provider-detail';
+import { providerDetailOf } from '@sentdm/voice-client-core';
 
 type Equals<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 
