@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/sentdm/sent-dm-voice-typescript/compare/voice-client-v0.2.0...voice-client-v0.2.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* drop the bundled provider's AMD branches, which fail Next.js builds with Turbopack ([e19325b](https://github.com/sentdm/sent-dm-voice-typescript/commit/e19325bed23d84ecda59575f77834d70ebef78a3))
+
 ## [0.2.0](https://github.com/sentdm/sent-dm-voice-typescript/compare/voice-client-v0.1.1...voice-client-v0.2.0) (2026-10-23)
 
 

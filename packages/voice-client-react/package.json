@@ -1,6 +1,6 @@
 {
   "name": "@sentdm/voice-client-react",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "React bindings for Sent Voice Client: a provider and hooks that re-render on call events",
   "author": "Sent <support@sent.dm>",
   "types": "dist/index.d.ts",
