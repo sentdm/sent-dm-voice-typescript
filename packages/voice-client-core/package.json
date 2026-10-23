@@ -1,6 +1,6 @@
 {
   "name": "@sentdm/voice-client-core",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "The shared core of the Sent Voice Client packages. Internal to them: apps install @sentdm/voice-client",
   "author": "Sent <support@sent.dm>",
   "types": "dist/index.d.ts",

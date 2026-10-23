@@ -1,6 +1,6 @@
 {
   "name": "@sentdm/voice-client",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Sent Voice Client for the web: calls and incoming calls inside your app",
   "author": "Sent <support@sent.dm>",
   "types": "dist/index.d.ts",
