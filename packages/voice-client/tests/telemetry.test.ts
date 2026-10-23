@@ -10,7 +10,7 @@ import {
 } from '@sentdm/voice-client/errors';
 import { MockAdapter } from './adapter/mock-adapter';
 import fixture from './fixtures/telemetry-batch-request.json';
-import { prefix, voiceToken } from '../../voice-client-core/tests/voice-token';
+import { prefix, response, voiceToken, withExchange } from '../../voice-client-core/tests/voice-token';
 
 jest.mock('@sentdm/voice-client/adapter/loader');
 jest.mock('@sentdm/voice-client/version', () => ({ VERSION: '0.1.0' }));
@@ -70,7 +70,7 @@ const now = Date.parse('2026-07-22T12:00:00Z');
 const refreshAt = 480_000;
 const chromeOnMac =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
-const accepted = { ok: true, status: 202 } as Response;
+const accepted = response(202);
 const fetchFailure = new TypeError('Failed to fetch');
 const unmapped = new SentVoiceError({
   code: 'UNKNOWN',
@@ -110,7 +110,7 @@ describe('telemetry', () => {
     tokenProvider = jest.fn(async () => voiceToken());
     fetchMock = jest.fn<Promise<Response>, [string, RequestInit]>(async () => accepted);
     page = new FakeDocument();
-    setGlobal('fetch', fetchMock);
+    setGlobal('fetch', withExchange(fetchMock));
     setGlobal('window', new EventTarget());
     setGlobal('document', page);
     setGlobal('navigator', { userAgent: chromeOnMac });
@@ -163,19 +163,15 @@ describe('telemetry', () => {
     ]);
   });
 
-  test.each<[string, SentVoiceOptions['telemetry'], string]>([
+  test.each<[string, string | undefined, string]>([
     ['the Sent API', undefined, 'https://api.sent.dm/v3/voice/telemetry'],
-    [
-      'another base URL',
-      { baseURL: 'https://staging.example/' },
-      'https://staging.example/v3/voice/telemetry',
-    ],
+    ['another base URL', 'https://staging.example/', 'https://staging.example/v3/voice/telemetry'],
   ])(
     'queued events go to %s 3 s after the first, with the voice token as bearer',
-    async (_, telemetry, url) => {
-      const jwt = voiceToken();
-      tokenProvider.mockResolvedValueOnce(jwt);
-      const client = createClient({ telemetry });
+    async (_, baseURL, url) => {
+      const token = voiceToken();
+      tokenProvider.mockResolvedValueOnce(token);
+      const client = createClient({ baseURL });
       await client.register();
 
       await jest.advanceTimersByTimeAsync(2_999);
@@ -184,7 +180,7 @@ describe('telemetry', () => {
 
       expect(fetchMock).toHaveBeenCalledWith(url, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: expect.any(String),
         keepalive: false,
       });
@@ -479,9 +475,9 @@ describe('telemetry', () => {
   );
 
   test('the voice token travels only in the Authorization header, never in a body or a log line', async () => {
-    const jwt = voiceToken();
-    tokenProvider.mockResolvedValue(jwt);
-    fetchMock.mockRejectedValue(new TypeError(`Failed to fetch with Bearer ${jwt}`));
+    const token = voiceToken();
+    tokenProvider.mockResolvedValue(token);
+    fetchMock.mockRejectedValue(new TypeError(`Failed to fetch with Bearer ${token}`));
     const lines: string[] = [];
     const capture = (message: string) => lines.push(message);
     const client = createClient({
@@ -494,19 +490,19 @@ describe('telemetry', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     for (const [, { headers, body }] of fetchMock.mock.calls) {
-      expect(headers).toMatchObject({ Authorization: `Bearer ${jwt}` });
-      expect(body).not.toContain(jwt);
+      expect(headers).toMatchObject({ Authorization: `Bearer ${token}` });
+      expect(body).not.toContain(token);
     }
     expect(lines).toContain('Sending telemetry failed: TypeError: Failed to fetch with Bearer ***');
-    expect(lines.join('\n')).not.toContain(jwt);
+    expect(lines.join('\n')).not.toContain(token);
   });
 
   test('batches carry the latest token, and unregister leaves telemetry running', async () => {
     const tokens: string[] = [];
     tokenProvider.mockImplementation(async () => {
-      const jwt = voiceToken();
-      tokens.push(jwt);
-      return jwt;
+      const token = voiceToken();
+      tokens.push(token);
+      return token;
     });
     const client = createClient();
     await client.register();

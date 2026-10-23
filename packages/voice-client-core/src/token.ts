@@ -1,31 +1,30 @@
+import { apiURL } from './api';
 import { NetworkError, TokenInvalidError } from './errors';
 
+/** A Sent voice token from the app's backend, with what Sent exchanged it for. */
 export interface VoiceToken {
-  jwt: string;
-  prefix: string;
+  /** The `vt_` token the app's backend minted. Authenticates the SDK's own calls to Sent. */
+  token: string;
+  /** What the adapter registers with the calling provider. Opaque here and never shown to the app. */
+  credential: string;
   identity: string;
   number: string;
+  /** What the provider ids of the account's users and rooms start with, separator included; see `qualify`. */
+  prefix: string;
   issuedAt: number;
   expiresAt: number;
 }
 
 /**
- * A provider-side id is `{prefix}_{name}`: the account's id, one underscore, the bare name. Readers
- * split on the first `_`: an account id never contains one while names may, so the prefix is opaque
- * here and nothing depends on its length or shape. The separator used to be `=`, which the calling
- * provider's library percent-encodes and then signs a second time, so every signed request was
- * refused; letters, digits, `-` and `_` are never encoded.
+ * The id the provider knows a user or room by: the account's prefix, as the exchange hands it over with
+ * its separator, then the bare name. Sent owns the format, so nothing here depends on its shape.
  */
-const separator = '_';
-
-/** The id the provider knows a user or room by. */
-export const qualify = (prefix: string, name: string): string => `${prefix}${separator}${name}`;
+export const qualify = (prefix: string, name: string): string => prefix + name;
 
 /** The bare name behind one of this account's ids, or undefined when the id is not one of ours. */
 export function unqualify(prefix: string, qualified: string): string | undefined {
-  const head = `${prefix}${separator}`;
-  return qualified.length > head.length && qualified.startsWith(head) ?
-      qualified.slice(head.length)
+  return qualified.length > prefix.length && qualified.startsWith(prefix) ?
+      qualified.slice(prefix.length)
     : undefined;
 }
 
@@ -42,49 +41,64 @@ export const tokenTiming = {
   offlineRetryIntervalMs: 30_000,
 } as const;
 
-export async function fetchToken(tokenProvider: () => Promise<string>): Promise<VoiceToken> {
-  let jwt: unknown;
+const exchangePath = '/v3/voice/tokens/exchange';
+
+/**
+ * Gets a voice token from the app's backend and exchanges it with Sent for the credential the adapter
+ * registers with. A token Sent refuses is invalid, so it is not retried. Any other failure, such as not
+ * reaching Sent, a rate limit or a server error, is a network error, which the client retries.
+ */
+export async function fetchToken(
+  tokenProvider: () => Promise<string>,
+  baseURL: string | undefined,
+): Promise<VoiceToken> {
+  let token: unknown;
   try {
-    jwt = await tokenProvider();
+    token = await tokenProvider();
   } catch {
     throw new NetworkError({ message: 'The token provider failed to fetch a voice token.' });
   }
-  return decodeToken(jwt);
-}
+  if (!isText(token)) throw new TokenInvalidError();
 
-export function decodeToken(jwt: unknown): VoiceToken {
-  if (typeof jwt !== 'string') throw new TokenInvalidError();
-
-  const { iss, sub, iat, exp, 'sent:number': number } = readClaims(jwt);
-  const users = `${iss}/users/`;
-  const userId =
-    typeof iss === 'string' && typeof sub === 'string' && sub.startsWith(users) ?
-      sub.slice(users.length)
-    : '';
-  const separatorAt = userId.indexOf(separator);
-  const prefix = separatorAt > 0 ? userId.slice(0, separatorAt) : '';
-  const identity = separatorAt > 0 ? userId.slice(separatorAt + 1) : '';
-
-  if (
-    typeof iat !== 'number' ||
-    typeof exp !== 'number' ||
-    exp <= iat ||
-    typeof number !== 'string' ||
-    !number ||
-    !prefix ||
-    !identity
-  ) {
-    throw new TokenInvalidError();
+  let response: Response;
+  try {
+    // No body, so no Content-Type: the API refuses one on a request without a body.
+    response = await fetch(apiURL(baseURL, exchangePath), {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    throw new NetworkError({ message: 'Sent could not be reached to exchange the voice token.' });
+  }
+  if (response.status === 401 || response.status === 403) throw new TokenInvalidError();
+  if (!response.ok) {
+    throw new NetworkError({ message: `Sent could not exchange the voice token (HTTP ${response.status}).` });
   }
 
-  return {
-    jwt,
-    prefix,
-    identity,
-    number,
-    issuedAt: iat * 1000,
-    expiresAt: exp * 1000,
-  };
+  return readExchange(token, await response.json().catch(() => undefined));
+}
+
+const isText = (value: unknown): value is string => typeof value === 'string' && value !== '';
+
+function readExchange(token: string, body: unknown): VoiceToken {
+  const data: Record<string, unknown> = (body as { data?: Record<string, unknown> } | undefined)?.data ?? {};
+  const { credential, identity, number, prefix, issued_at: issued, expires_at: expires } = data;
+  const issuedAt = isText(issued) ? Date.parse(issued) : NaN;
+  const expiresAt = isText(expires) ? Date.parse(expires) : NaN;
+
+  if (
+    !isText(credential) ||
+    !isText(identity) ||
+    !isText(number) ||
+    !isText(prefix) ||
+    !(expiresAt > issuedAt)
+  ) {
+    throw new NetworkError({
+      message: 'Sent answered the voice token exchange with an unexpected response.',
+    });
+  }
+
+  return { token, credential, identity, number, prefix, issuedAt, expiresAt };
 }
 
 export function refreshDelay({ issuedAt, expiresAt }: VoiceToken): number {
@@ -105,17 +119,4 @@ export function offlineRetryDelay(): number {
 
 function jitter(): number {
   return 1 - Math.random() * 0.25;
-}
-
-export function readClaims(jwt: string): Record<string, unknown> {
-  const parts = jwt.split('.');
-  const payload = parts.length === 3 ? parts[1] : undefined;
-  if (payload === undefined) return {};
-
-  try {
-    const claims: unknown = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
-    return typeof claims === 'object' && claims !== null ? (claims as Record<string, unknown>) : {};
-  } catch {
-    return {};
-  }
 }

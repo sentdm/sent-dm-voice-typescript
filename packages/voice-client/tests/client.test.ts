@@ -10,11 +10,11 @@ import {
 } from '@sentdm/voice-client/errors';
 import { version } from '../package.json';
 import { MockAdapter } from './adapter/mock-adapter';
-import { prefix, voiceToken } from '../../voice-client-core/tests/voice-token';
+import { credentialFor, prefix, voiceToken } from '../../voice-client-core/tests/voice-token';
 
 jest.mock('@sentdm/voice-client/adapter/loader');
 
-type PendingFetch = { resolve: (jwt: string) => void; reject: (error: Error) => void };
+type PendingFetch = { resolve: (token: string) => void; reject: (error: Error) => void };
 
 const fetchFailure = new TypeError('Failed to fetch');
 const refreshAt = 480_000;
@@ -45,9 +45,9 @@ describe('SentVoice', () => {
     expect(SentVoice.version).toBe(version);
   });
 
-  test('register loads the adapter, registers it with the token and exposes the identity and number', async () => {
-    const jwt = voiceToken();
-    tokenProvider.mockResolvedValueOnce(jwt);
+  test('register loads the adapter, registers it with the credential the token exchanges for and exposes the identity and number', async () => {
+    const token = voiceToken();
+    tokenProvider.mockResolvedValueOnce(token);
     const register = jest.spyOn(adapter, 'register');
     const client = createClient();
     const events: string[] = [];
@@ -60,9 +60,28 @@ describe('SentVoice', () => {
     await client.register();
 
     expect(loadAdapter).toHaveBeenCalledTimes(1);
-    expect(register).toHaveBeenCalledWith(jwt);
+    expect(register).toHaveBeenCalledWith(credentialFor(token));
     expect(events).toEqual(['registering while registering', 'registered while registered']);
     expect(client).toMatchObject({ state: 'registered', identity: 'agent-42', number: '+38349111222' });
+  });
+
+  test('register loads the adapter while the token is fetched and exchanged', async () => {
+    let resolve!: (token: string) => void;
+    tokenProvider.mockImplementationOnce(() => new Promise((settle) => (resolve = settle)));
+
+    const registered = createClient().register();
+
+    expect(loadAdapter).toHaveBeenCalledTimes(1);
+    resolve(voiceToken());
+    await registered;
+  });
+
+  test('register exchanges the token under the base URL the app set', async () => {
+    const fetch = jest.spyOn(globalThis, 'fetch');
+
+    await createClient({ baseURL: 'https://staging.example' }).register();
+
+    expect(fetch).toHaveBeenCalledWith('https://staging.example/v3/voice/tokens/exchange', expect.anything());
   });
 
   test('register hands the service worker and audio element options to the adapter', async () => {
@@ -163,7 +182,7 @@ describe('SentVoice', () => {
     expect(tokenWillExpire).toHaveBeenCalledWith({ expiresAt: Date.parse('2026-09-22T12:10:00Z') });
     expect(tokenWillExpire).toHaveReturnedWith(1);
     expect(register).toHaveBeenCalledTimes(2);
-    expect(register).toHaveBeenLastCalledWith(await tokenProvider.mock.results[1]!.value);
+    expect(register).toHaveBeenLastCalledWith(credentialFor(await tokenProvider.mock.results[1]!.value));
     expect(client).toMatchObject({ state: 'registered', number: '+38349333444' });
 
     await jest.advanceTimersByTimeAsync(refreshAt);
@@ -425,12 +444,12 @@ describe('SentVoice', () => {
     const capture = (message: string) => lines.push(message);
     const tokens: string[] = [];
     tokenProvider.mockImplementation(async () => {
-      const jwt = voiceToken();
-      tokens.push(jwt);
-      return jwt;
+      const token = voiceToken();
+      tokens.push(token);
+      return token;
     });
-    jest.spyOn(adapter, 'register').mockImplementationOnce(async (jwt) => {
-      throw new NetworkError({ message: `Invalid JWT: ${jwt}` });
+    jest.spyOn(adapter, 'register').mockImplementationOnce(async (credential) => {
+      throw new NetworkError({ message: `Invalid JWT: ${credential}` });
     });
     const client = createClient({
       logger: { error: capture, warn: capture, info: capture, debug: capture },
@@ -448,7 +467,7 @@ describe('SentVoice', () => {
     expect(lines.length).toBeGreaterThan(5);
     expect(output).toContain('Invalid JWT: ***');
     expect(tokens.length).toBeGreaterThan(1);
-    for (const jwt of tokens) expect(output).not.toContain(jwt);
+    for (const token of tokens) expect(output).not.toContain(token);
   });
 
   test('an invalid logLevel warns and falls back to warn', async () => {

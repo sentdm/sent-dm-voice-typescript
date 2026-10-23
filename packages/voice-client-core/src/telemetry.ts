@@ -1,4 +1,5 @@
 /// <reference lib="dom" />
+import { apiURL } from './api';
 import Bowser from 'bowser';
 import { SentVoiceError } from './errors';
 import type { Log } from './log';
@@ -67,7 +68,6 @@ interface Entry {
   retried: boolean;
 }
 
-const defaultBaseURL = 'https://api.sent.dm';
 // Telemetry is best effort: a batch the API refuses (a 429, a 5xx) or that never arrives is retried
 // once with the next flush and then dropped.
 // Nothing here throws to the app or delays a call. The route follows the telemetry ingest PR.
@@ -211,14 +211,14 @@ export class Telemetry {
 
   /** `sdkVersion` is the version of the client package the reports come from. */
   constructor(baseURL: string | undefined, log: Log, sdkVersion: string) {
-    const base = baseURL || defaultBaseURL;
-    this.#url = base + (base.endsWith('/') ? path.slice(1) : path);
+    this.#url = apiURL(baseURL, path);
     this.#log = log;
     this.#sdkVersion = sdkVersion;
   }
 
-  useToken(jwt: string): void {
-    this.#token = jwt;
+  /** The Sent voice token the reports are sent with. */
+  useToken(token: string): void {
+    this.#token = token;
     // Events recorded before the first token, such as a failed attempt and the registration itself.
     if (this.#queue.length) this.#schedule();
     if (this.#timer) return;

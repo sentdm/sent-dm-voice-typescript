@@ -14,6 +14,7 @@ const config: JestConfigWithTsJest = {
   },
   modulePathIgnorePatterns: ['<rootDir>/packages/[^/]+/dist/'],
   testPathIgnorePatterns: ['scripts'],
+  setupFiles: ['<rootDir>/packages/voice-client-core/tests/setup-exchange.ts'],
 };
 
 export default config;

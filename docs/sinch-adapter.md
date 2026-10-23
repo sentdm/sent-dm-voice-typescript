@@ -24,15 +24,18 @@ the WebRTC bundle out of pages that never register. A load that fails rejects wi
 
 ## Registration
 
-- The token names the application key (`iss` is `//rtc.sinch.com/applications/{key}`) and the user id
-  (`sub` ends in `/users/{prefix}_{identity}`: the account id, one underscore, the identity; readers split on the first underscore, which an account id never contains).
+- `register()` takes the credential Sent's token exchange answered with, never the app's voice token. The
+  credential names the application key (`iss` is `//rtc.sinch.com/applications/{key}`) and the user id (`sub`
+  ends in `/users/{prefix}_{identity}`: the account id, one underscore, the identity; readers split on the
+  first underscore, which an account id never contains). The adapter is the only code that reads it; the
+  core takes the identity and the prefix from the exchange.
 - The environment host is `ocra-euc1.api.sinch.com`. It has to match the region of the shared application: the
   prototype found that the global `ocra.api.sinch.com` did not route app-to-app signaling reliably to its EU
   application. Change the constant if the production application lives in another region.
 - `register()` builds a client, enables managed push, then starts it. It resolves on `onClientStarted` and
   rejects on `onClientFailed`.
-- `onCredentialsRequired` is answered with the latest token given to `register()`. Registering again while
-  registered only replaces that token.
+- `onCredentialsRequired` is answered with the latest credential given to `register()`. Registering again
+  while registered only replaces that credential.
 - `unregister()` calls `disableManagedPushSupport()`, which unregisters the service worker so an incoming push
   can no longer restart the client, then `terminate()`. Live calls keep running.
 
@@ -205,7 +208,7 @@ Needs the backend relay deployed, a voice-enabled number, two browsers over HTTP
 `sw.js`, and a phone. Record the date, the `CallEndCause` and `details.error` of every call, and add each new
 error to [Error mapping](#error-mapping).
 
-1. Register with a token from `POST /v3/channels/voice/tokens`; allow notifications; confirm `registered`.
+1. Register with a token from `POST /v3/voice/tokens`; allow notifications; confirm `registered`.
 2. App to app, both directions: answer, then hang up from each side.
 3. App to app: decline; caller cancels while ringing; let it ring out.
 4. App to phone: answer; busy; no answer; the phone declines.

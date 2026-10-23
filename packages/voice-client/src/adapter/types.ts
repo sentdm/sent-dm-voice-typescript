@@ -8,7 +8,8 @@ import { type SentVoiceError } from '@sentdm/voice-client-core';
  *
  * - Ids are wire ids: the core adds and strips the tenant prefix, so user ids, room names and
  *   incoming `from` values are already namespaced.
- * - `register` while registered hands the provider a fresh token.
+ * - `register` takes the provider credential Sent exchanged the voice token for. While registered, it
+ *   hands the provider a fresh credential.
  * - Every failure is a `SentVoiceError`. A provider error without a mapping becomes one with code
  *   `UNKNOWN`, category `signaling` and the raw error kept as provider detail, which only telemetry reads.
  * - Calls are identified by the provider call id. Their events start once the id is known from
@@ -18,7 +19,7 @@ import { type SentVoiceError } from '@sentdm/voice-client-core';
  * - Stats report jitter and rtt in milliseconds and packetLoss as a fraction between 0 and 1.
  */
 export interface ProviderAdapter {
-  register(token: string): Promise<void>;
+  register(credential: string): Promise<void>;
   unregister(): Promise<void>;
   call(target: CallTarget): Promise<string>;
   joinConference(room: string): Promise<string>;

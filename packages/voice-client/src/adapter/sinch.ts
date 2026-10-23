@@ -8,7 +8,6 @@ import {
   NetworkError,
   NotRegisteredError,
   SentVoiceError,
-  readClaims,
 } from '@sentdm/voice-client-core';
 import type {
   AdapterFactory,
@@ -25,6 +24,22 @@ type StatsCall = Call & { getPeerConnectionStats(): Promise<RTCStatsReport | nul
 const environmentHost = 'ocra-euc1.api.sinch.com';
 const applicationPrefix = '//rtc.sinch.com/applications/';
 const answerThrottle = 1_500;
+
+/** The application key and user id a credential names, read from its claims without verifying it. */
+function credentialSubject(credential: string): { applicationKey: string; userId: string } {
+  let claims: { iss?: unknown; sub?: unknown } = {};
+  try {
+    claims = JSON.parse(atob((credential.split('.')[1] ?? '').replace(/-/g, '+').replace(/_/g, '/'))) ?? {};
+  } catch {
+    // Read as empty, which Sinch refuses when the client starts.
+  }
+  const iss = typeof claims.iss === 'string' ? claims.iss : '';
+  const sub = typeof claims.sub === 'string' ? claims.sub : '';
+  return {
+    applicationKey: iss.slice(applicationPrefix.length),
+    userId: sub.startsWith(`${iss}/users/`) ? sub.slice(`${iss}/users/`.length) : '',
+  };
+}
 
 const providerError = (error: unknown): SentVoiceError =>
   error instanceof SentVoiceError ? error : (
@@ -80,7 +95,7 @@ class SinchAdapter implements ProviderAdapter {
   #sinch: Sinch;
   #options: AdapterOptions;
   #client: SinchClient | undefined;
-  #token = '';
+  #credential = '';
   #inputDeviceId: string | undefined;
   #audio: HTMLAudioElement | undefined;
   #calls = new Map<string, Call>();
@@ -93,9 +108,9 @@ class SinchAdapter implements ProviderAdapter {
     this.#options = options;
   }
 
-  async register(token: string): Promise<void> {
-    this.#token = token;
-    this.#client ??= await this.#start(token).catch(rethrow);
+  async register(credential: string): Promise<void> {
+    this.#credential = credential;
+    this.#client ??= await this.#start(credential).catch(rethrow);
   }
 
   async unregister(): Promise<void> {
@@ -185,11 +200,11 @@ class SinchAdapter implements ProviderAdapter {
     await audio.setSinkId(deviceId).catch(rethrow);
   }
 
-  async #start(token: string): Promise<SinchClient> {
-    const { iss, sub } = readClaims(token) as Record<'iss' | 'sub', string>;
+  async #start(credential: string): Promise<SinchClient> {
+    const { applicationKey, userId } = credentialSubject(credential);
     const client = this.#sinch.Sinch.getSinchClientBuilder()
-      .applicationKey(iss.slice(applicationPrefix.length))
-      .userId(sub.slice(`${iss}/users/`.length))
+      .applicationKey(applicationKey)
+      .userId(userId)
       .environmentHost(environmentHost)
       .build();
     const { url, scope } = this.#options.serviceWorker ?? {};
@@ -197,7 +212,7 @@ class SinchAdapter implements ProviderAdapter {
     try {
       await new Promise<void>((resolve, reject) => {
         client.addListener({
-          onCredentialsRequired: (_, registration) => void registration.register(this.#token),
+          onCredentialsRequired: (_, registration) => void registration.register(this.#credential),
           onClientStarted: ({ callClient }) => {
             callClient.addListener({ onIncomingCall: (_, call) => this.#receive(call) });
             if (this.#inputDeviceId !== undefined) this.#useInput(callClient, this.#inputDeviceId);
