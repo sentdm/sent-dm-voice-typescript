@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.2.0](https://github.com/sentdm/sent-dm-voice-typescript/compare/voice-client-v0.1.1...voice-client-v0.2.0) (2026-10-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* tokenProvider must return the token from POST /v3/voice/tokens, and telemetry.baseURL is replaced by the top-level baseURL option, which the token exchange also uses.
+* import the React bindings from @sentdm/voice-client-react instead of @sentdm/voice-client/react.
+* install @sentdm/voice-client instead of @sentdm/voice.
+
+### Features
+
+* add the Voice Client contract and its conformance test ([fdd7995](https://github.com/sentdm/sent-dm-voice-typescript/commit/fdd7995eb44c7a5ea93f834d24fe34d5f7a31c29))
+* exchange the opaque voice token for the provider credential ([e0ec6d7](https://github.com/sentdm/sent-dm-voice-typescript/commit/e0ec6d7248b0d9f8861401752a08433967badf4d))
+* extract @sentdm/voice-client-core ([a8cbf69](https://github.com/sentdm/sent-dm-voice-typescript/commit/a8cbf692a9fad8fedb4337df143e5b77f8eba88e))
+* move the React bindings to @sentdm/voice-client-react ([3853f65](https://github.com/sentdm/sent-dm-voice-typescript/commit/3853f6522d31ce9a4c865749d8d39c2b6485adf7))
+* publish as @sentdm/voice-client from a pnpm workspace ([cdd8b0c](https://github.com/sentdm/sent-dm-voice-typescript/commit/cdd8b0cf0bb57549816f9acf99fe4725e10ecf70))
+
+
+### Bug Fixes
+
+* ignore call updates once the call has ended ([e33c825](https://github.com/sentdm/sent-dm-voice-typescript/commit/e33c8258a7ab282292fefafa1954353d175c67ef))
+
+
+### Documentation
+
+* keep the units on CallStats after its move to core ([590df75](https://github.com/sentdm/sent-dm-voice-typescript/commit/590df759d0aa377d84ec875b00fdb768615f536b))
+
+
+### Build System
+
+* bundle sinch-rtc into the voice client ([9db8bbb](https://github.com/sentdm/sent-dm-voice-typescript/commit/9db8bbbc56c307cb08def1c3973fbbfeab68fa47))
+
 ## [0.1.1](https://github.com/sentdm/sent-dm-voice-sdk/compare/v0.1.0...v0.1.1) (2026-09-29)
 
 
