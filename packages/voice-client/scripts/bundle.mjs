@@ -18,6 +18,11 @@ const options = {
   minify: true,
   legalComments: 'eof',
   logLevel: 'warning',
+  // crypto-js and ulid, which sinch-rtc uses, are UMD, with an AMD branch: typeof define=="function"&&
+  // define.amd?define(["./core"],t):…. No browser takes it, but Turbopack resolves the file names it lists
+  // and fails the app's build on them. With the global define as undefined, esbuild drops the branch.
+  // Nothing else in the bundle reads a global define.
+  define: { define: 'undefined' },
 };
 
 // In ESM, esbuild would leave sinch-rtc's require("pubnub") as a shim that throws outside Node ("Dynamic

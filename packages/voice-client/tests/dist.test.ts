@@ -11,6 +11,8 @@ const distPackage = JSON.parse(fs.readFileSync(path.join(distDir, 'package.json'
 };
 const entries = ['@sentdm/voice-client', '@sentdm/voice-client/errors'];
 const formats = ['cjs', 'esm'] as const;
+// The bundled provider's file under dist/adapter, by format.
+const providerFile = (format: (typeof formats)[number]) => `sinch-rtc.${format === 'cjs' ? 'js' : 'mjs'}`;
 const namespaceTypes = [
   'ConnectParams',
   'JoinConferenceParams',
@@ -145,7 +147,7 @@ export type Types = [${namespaceTypes.map((type) => `SentVoice.${type}`).join(',
   });
 
   test.each(formats)('the bundled provider loads as %s with the values the adapter reads', (format) => {
-    const file = `./adapter/sinch-rtc.${format === 'cjs' ? 'js' : 'mjs'}`;
+    const file = `./adapter/${providerFile(format)}`;
 
     const exported = runInDist(
       format,
@@ -161,6 +163,15 @@ console.log(JSON.stringify(Object.keys(provider).sort()));`,
 
     expect(bundle).toMatch(/^import __pubnub from "pubnub";/);
   });
+
+  test.each(formats)(
+    'the bundled provider makes no AMD define call, whose file names Turbopack fails to resolve, as %s',
+    (format) => {
+      const bundle = fs.readFileSync(path.join(distDir, 'adapter', providerFile(format)), 'utf8');
+
+      expect(bundle.match(/(?<![\w$.])define\s*\(\s*\[[^\]]*\]/g) ?? []).toEqual([]);
+    },
+  );
 
   test('the notices give a licence for every bundled package', () => {
     const notices = fs.readFileSync(path.join(distDir, 'THIRD_PARTY_NOTICES.md'), 'utf8');
