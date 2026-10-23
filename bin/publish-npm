@@ -23,7 +23,9 @@ for package in $(./scripts/utils/packages); do
   PACKAGE_NAME="$(jq -r -e '.name' ./package.json)"
   VERSION="$(jq -r -e '.version' ./package.json)"
 
-  if npm view "$PACKAGE_NAME@$VERSION" version >/dev/null 2>&1; then
+  # --prefer-online skips npm's local cache. The registry itself can still lag a version that
+  # was published seconds ago, which the publish below allows for.
+  if npm view --prefer-online "$PACKAGE_NAME@$VERSION" version >/dev/null 2>&1; then
     echo "$PACKAGE_NAME@$VERSION is already published, skipping"
     cd - >/dev/null
     continue
@@ -57,6 +59,18 @@ for package in $(./scripts/utils/packages); do
     TAG="latest"
   fi
 
-  pnpm publish --npm-path "$NPM_PATH" --no-git-checks --tag "$TAG"
+  # npm refuses a version it already has with E409. Another run that published it moments ago
+  # is not a failure, so look again, for up to 30 seconds of registry lag, before failing.
+  if ! pnpm publish --npm-path "$NPM_PATH" --no-git-checks --tag "$TAG"; then
+    for _ in 1 2 3 4 5 6; do
+      if npm view --prefer-online "$PACKAGE_NAME@$VERSION" version >/dev/null 2>&1; then
+        echo "$PACKAGE_NAME@$VERSION was published by another run, skipping"
+        cd - >/dev/null
+        continue 2
+      fi
+      sleep 5
+    done
+    exit 1
+  fi
   cd - >/dev/null
 done
