@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sent Voice browser phone</title>
+    <link rel="icon" href="data:," />
+    <style>
+      body {
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+        max-width: 40rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      form,
+      section {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        margin: 1rem 0;
+      }
+      input {
+        flex: 1;
+        padding: 0.4rem;
+      }
+      button {
+        padding: 0.4rem 0.9rem;
+      }
+      #log {
+        list-style: none;
+        padding: 0;
+        font:
+          13px/1.6 ui-monospace,
+          monospace;
+        color: #444;
+      }
+      .muted {
+        color: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Browser phone</h1>
+    <p class="muted">Sent API: <span id="api"></span></p>
+
+    <section>
+      <input id="identity" placeholder="Identity, for example alice" autocomplete="off" />
+      <button id="go-online">Go online</button>
+    </section>
+    <p id="status" class="muted">Offline</p>
+
+    <form id="dialer" hidden>
+      <input id="to" placeholder="+14155551234, or another identity" autocomplete="off" />
+      <button>Call</button>
+    </form>
+
+    <section id="incoming" hidden>
+      <span>Incoming call from <strong id="incoming-from"></strong></span>
+      <button id="accept">Answer</button>
+      <button id="decline">Decline</button>
+    </section>
+
+    <div id="call" hidden>
+      <p>On a call with <strong id="call-with"></strong>: <span id="call-state"></span></p>
+      <section>
+        <button id="hangup">Hang up</button>
+        <button id="mute">Mute</button>
+      </section>
+      <form id="digits">
+        <input id="digit" placeholder="Digits to send" autocomplete="off" />
+        <button>Send digits</button>
+      </form>
+    </div>
+
+    <h2>Events</h2>
+    <ul id="log"></ul>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

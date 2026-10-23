@@ -22,4 +22,7 @@ the built output of the ones before it.
 ./scripts/lint        # prettier, eslint, types, Are The Types Wrong? and publint
 ```
 
+To try a change in a browser, or a Sent API that isn't in production yet, run the
+[browser phone](examples/browser-phone): a one-page phone on these packages, built from source.
+
 Releases are cut by release-please from `main` and published to npm from GitHub Actions.
