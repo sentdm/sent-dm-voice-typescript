@@ -15,7 +15,8 @@ const clientFromCore = {
 
 const providerImport = {
   regex: '^sinch-rtc(/.*)?$',
-  message: 'sinch-rtc may only be imported by packages/voice-client/src/adapter/sinch.ts.',
+  message:
+    'sinch-rtc may only be imported by the Sinch adapter, packages/voice-client/src/adapter/sinch*.ts.',
 };
 
 /** The imports each package's source may not make, by package directory. */
@@ -50,7 +51,7 @@ export default tseslint.config(
     },
   })),
   {
-    files: ['packages/voice-client/src/adapter/sinch.ts'],
+    files: ['packages/voice-client/src/adapter/sinch.ts', 'packages/voice-client/src/adapter/sinch-rtc.ts'],
     rules: {
       'no-restricted-imports': ['error', { patterns: restricted['voice-client'] }],
     },

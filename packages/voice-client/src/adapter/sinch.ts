@@ -19,7 +19,7 @@ import type {
   ProviderAdapter,
 } from './types';
 
-type Sinch = typeof import('sinch-rtc');
+type Sinch = typeof import('./sinch-rtc');
 type StatsCall = Call & { getPeerConnectionStats(): Promise<RTCStatsReport | null> };
 
 const environmentHost = 'ocra-euc1.api.sinch.com';
@@ -70,7 +70,7 @@ const guard = <T>(action: () => T): T => {
 
 export const loadSinchAdapter: AdapterFactory = async (options) =>
   new SinchAdapter(
-    await import('sinch-rtc').catch((error: unknown) => {
+    await import('./sinch-rtc').catch((error: unknown) => {
       throw new NetworkError({ message: 'The calling provider could not be loaded.', providerDetail: error });
     }),
     options,

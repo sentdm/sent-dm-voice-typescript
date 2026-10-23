@@ -5,6 +5,10 @@ import ts from 'typescript';
 import * as errors from '@sentdm/voice-client/errors';
 
 const distDir = path.resolve(__dirname, '..', 'dist');
+const distPackage = JSON.parse(fs.readFileSync(path.join(distDir, 'package.json'), 'utf8')) as {
+  dependencies: Record<string, string>;
+  exports: Record<string, string | { require: { types: string }; types: string }>;
+};
 const entries = ['@sentdm/voice-client', '@sentdm/voice-client/errors'];
 const formats = ['cjs', 'esm'] as const;
 const namespaceTypes = [
@@ -120,9 +124,7 @@ export type Types = [${namespaceTypes.map((type) => `SentVoice.${type}`).join(',
   });
 
   test('adapter types are not reachable from any public entry point', () => {
-    const { exports } = JSON.parse(fs.readFileSync(path.join(distDir, 'package.json'), 'utf8')) as {
-      exports: Record<string, string | { require: { types: string }; types: string }>;
-    };
+    const { exports } = distPackage;
     const declarations = Object.values(exports).flatMap((entry) =>
       typeof entry === 'string' ? [] : [entry.require.types, entry.types],
     );
@@ -133,6 +135,40 @@ export type Types = [${namespaceTypes.map((type) => `SentVoice.${type}`).join(',
     const reached = program.getSourceFiles().map((file) => path.relative(distDir, file.fileName));
 
     expect(reached.filter((file) => file.startsWith('adapter/'))).toEqual([]);
+  });
+
+  test('the provider library is bundled in, so the package depends on pubnub but not on sinch-rtc', () => {
+    const { dependencies } = distPackage;
+
+    expect(Object.keys(dependencies)).not.toContain('sinch-rtc');
+    expect(Object.keys(dependencies)).toContain('pubnub');
+  });
+
+  test.each(formats)('the bundled provider loads as %s with the values the adapter reads', (format) => {
+    const file = `./adapter/sinch-rtc.${format === 'cjs' ? 'js' : 'mjs'}`;
+
+    const exported = runInDist(
+      format,
+      `const provider = await load(${JSON.stringify(file)});
+console.log(JSON.stringify(Object.keys(provider).sort()));`,
+    );
+
+    expect(exported).toEqual(['CallEndCause', 'CallQualityWarningEventType', 'ErrorType', 'Sinch']);
+  });
+
+  test('the ESM bundle imports pubnub statically, so bundlers and browsers can follow it', () => {
+    const bundle = fs.readFileSync(path.join(distDir, 'adapter', 'sinch-rtc.mjs'), 'utf8');
+
+    expect(bundle).toMatch(/^import __pubnub from "pubnub";/);
+  });
+
+  test('the notices give a licence for every bundled package', () => {
+    const notices = fs.readFileSync(path.join(distDir, 'THIRD_PARTY_NOTICES.md'), 'utf8');
+    const sections = notices.split('\n## ').slice(1);
+    const names = sections.map((section) => section.slice(0, section.indexOf(' ')));
+
+    expect(names).toContain('sinch-rtc');
+    for (const section of sections) expect(section).toMatch(/\nLicence: \S/);
   });
 
   test('the service worker ships as @sentdm/voice-client/sw.js', () => {
