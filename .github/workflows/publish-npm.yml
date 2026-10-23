@@ -19,8 +19,10 @@ on:
   release:
     types: [published]
 
-# One release per package arrives at once. Runs queue, so the first publishes every new version
-# and the rest find nothing left to publish.
+# The three packages share one version (linked-versions), so release-please publishes three
+# GitHub releases at once. bin/publish-npm publishes every package whose version is new, so one
+# run is enough: only voice-client's release runs the job, and the other two are skipped. Runs
+# still queue, for a manual run that overlaps one.
 concurrency:
   group: publish-npm
   cancel-in-progress: false
@@ -28,6 +30,7 @@ concurrency:
 jobs:
   publish:
     name: publish
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'voice-client-v')
     runs-on: ubuntu-latest
     permissions:
       contents: read
