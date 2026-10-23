@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@sentdm/voice-client-core": "workspace:*",
-    "sinch-rtc": "2.49.11"
+    "pubnub": "^7.6.3"
   },
   "exports": {
     ".": {
@@ -40,5 +40,8 @@
       "default": "./dist/errors.mjs"
     },
     "./sw.js": "./dist/sw.js"
+  },
+  "devDependencies": {
+    "sinch-rtc": "2.49.11"
   }
 }

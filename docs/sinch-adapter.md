@@ -8,7 +8,9 @@ checklist at the end has been run against a live application.
 
 ## Version
 
-- `sinch-rtc` is pinned to exactly `2.49.11` (released 2026-09-18).
+- `sinch-rtc` is pinned to exactly `2.49.11` (released 2026-09-18) and bundled into the published package, so
+  apps install no provider package. `pubnub`, which it uses, stays a dependency of `@sentdm/voice-client`: its
+  licence allows redistributing it only unmodified.
 - Release cadence in 2026: 2.42.6 (Feb 25), 2.44.4 (Mar 16), 2.45.5 (Apr 8), 2.46.8 (Apr 16), 2.46.9 (Apr 20),
   2.47.7 (Jun 23), 2.48.11 (Jul 15), 2.49.11 (Sep 18): a minor release every three to eight weeks.
 - Before upgrading, re-check every call listed in [Calls](#calls), the listener callbacks in [Events](#events),
@@ -17,8 +19,10 @@ checklist at the end has been run against a live application.
 
 ## Loading
 
-`loadAdapter` is `loadSinchAdapter`, which runs `await import('sinch-rtc')` when the client registers for the
-first time. Importing the SDK or creating a client never loads it, which keeps server-side rendering safe and
+`loadAdapter` is `loadSinchAdapter`, which runs `await import('./sinch-rtc')` when the client registers for the
+first time. In the source that module re-exports the four values the adapter reads from `sinch-rtc`; the build
+(`packages/voice-client/scripts/bundle.mjs`) replaces it with `sinch-rtc` and its own dependencies bundled in,
+as CommonJS and ESM, and writes their licences to `THIRD_PARTY_NOTICES.md`. Importing the SDK or creating a client never loads it, which keeps server-side rendering safe and
 the WebRTC bundle out of pages that never register. A load that fails rejects with `NetworkError`, so
 `register()` retries it, and the core loads again on the next attempt.
 
@@ -160,7 +164,7 @@ Still unknown: how a phone that is busy or unanswered, and a call the backend re
 
 | Where                        | Provider error                                                                                               | Sent error                              |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| `import('sinch-rtc')`        | the module could not be loaded                                                                               | `NetworkError`                          |
+| `import('./sinch-rtc')`      | the module could not be loaded                                                                               | `NetworkError`                          |
 | `call()`, `joinConference()` | no audio track in the outgoing stream (microphone refused)                                                   | `MediaPermissionError`                  |
 | `answer()`                   | microphone tracks unavailable (_source:_ its only rejection)                                                 | `MediaPermissionError`                  |
 | call ended with `Failure`    | `SinchError` in the network domain, e.g. ICE failure (3002)                                                  | `NetworkError`                          |

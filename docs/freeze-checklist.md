@@ -44,13 +44,13 @@ refusal from the customer's backend reaches the caller is still unknown (End cau
 
 ## Packaging
 
-| Area         | Plan                                                    | Ships                                                                                                          | Disposition |
-| ------------ | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------- |
-| Exports      | `.`, `./react`, `./errors`                              | also `./sw.js`, the service worker apps serve                                                                  | Approved    |
-| Dependencies | `sinch-rtc`, hidden                                     | also `bowser` for the telemetry device info, both pinned exact                                                 | Approved    |
-| React        | unspecified                                             | optional peer `^18.0.0 \|\| ^19.0.0`                                                                           | Approved    |
-| Repository   | `sentdm/sent-voice-typescript`, `packages/voice` layout | `sentdm/sent-dm-voice-sdk`, with the flat layout of `sent-dm-typescript`                                       | Approved    |
-| Publishing   | `@sentdm/voice`, `0.x` during alpha                     | public access from the first `0.x` release, released by release-please from `main`, as in `sent-dm-typescript` | Approved    |
+| Area         | Plan                                                    | Ships                                                                                                                                                                                                                                         | Disposition         |
+| ------------ | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| Exports      | `.`, `./react`, `./errors`                              | also `./sw.js`, the service worker apps serve                                                                                                                                                                                                 | Approved            |
+| Dependencies | `sinch-rtc`, hidden                                     | `sinch-rtc` bundled into the adapter's lazily loaded module, its licences in `THIRD_PARTY_NOTICES.md`; `pubnub`, which it uses and may not be redistributed modified, from `^7.6.3`, and `bowser` for the telemetry device info, pinned exact | Proposed 2026-10-23 |
+| React        | unspecified                                             | optional peer `^18.0.0 \|\| ^19.0.0`                                                                                                                                                                                                          | Approved            |
+| Repository   | `sentdm/sent-voice-typescript`, `packages/voice` layout | `sentdm/sent-dm-voice-sdk`, with the flat layout of `sent-dm-typescript`                                                                                                                                                                      | Approved            |
+| Publishing   | `@sentdm/voice`, `0.x` during alpha                     | public access from the first `0.x` release, released by release-please from `main`, as in `sent-dm-typescript`                                                                                                                                | Approved            |
 
 ## Exclusions
 

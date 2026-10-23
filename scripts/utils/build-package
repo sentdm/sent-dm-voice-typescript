@@ -24,6 +24,9 @@ PKG_JSON_PATH="$(pwd)/package.json" node "$root/scripts/utils/make-dist-package-
 # Build to .js/.mjs/.d.ts files.
 "$root/node_modules/.bin/tsc-multi"
 
+# A package can rework its build here, as voice-client does to bundle the provider library in.
+if [ -e scripts/bundle.mjs ]; then node scripts/bundle.mjs; fi
+
 cp tsconfig.dist-src.json dist/src/tsconfig.json
 
 DIST_PATH="$(pwd)/dist" node "$root/scripts/utils/postprocess-files.cjs"
