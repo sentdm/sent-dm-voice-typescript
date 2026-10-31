@@ -83,4 +83,9 @@ Nothing in a default run calls Sent's servers.
 - **This repository is public.** Nothing in it, including PR text,
   changelogs and release notes, links to or names Sent's private
   repositories, internal systems or the providers behind a channel. Write
-  for the customer who installs the package.
+  for the customer who installs the package. One exception the package
+  cannot avoid: the web client bundles a provider's WebRTC SDK, so that
+  provider's name is in `packages/voice-client/src/adapter/`, in the
+  dependency it declares, and in the adapter notes under `docs/`. Keep it
+  there and nowhere else: never in a public type or option name, the
+  README, a changelog or a release note.
