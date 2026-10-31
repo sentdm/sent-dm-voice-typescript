@@ -12,4 +12,4 @@ Give us a reasonable amount of time to investigate and address the issue before 
 
 ## Supported versions
 
-Security fixes ship in the latest release of `@sentdm/voice`. Upgrade to the latest version to receive them.
+Security fixes ship in the latest release of `@sentdm/voice-client` and `@sentdm/voice-client-react`. Upgrade to the latest version to receive them.
