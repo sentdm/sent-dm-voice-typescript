@@ -3,6 +3,7 @@ const path = require('path');
 
 const main = () => {
   const pkgDir = process.env['PKG_DIR'] || path.resolve(__dirname, '..', '..');
+  // nosemgrep: javascript.node.require.dynamic-require -- build script; the package dir is this repo or one CI names
   const pkg = require(path.join(pkgDir, 'package.json'));
   const version = pkg['version'];
   if (!version) throw 'The version property is not set in the package.json file';
