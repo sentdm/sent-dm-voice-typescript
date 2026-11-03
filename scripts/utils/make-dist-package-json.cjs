@@ -1,3 +1,4 @@
+// nosemgrep: javascript.node.require.dynamic-require -- build script; the path is the repo's own package.json or one CI names
 const pkgJson = require(process.env['PKG_JSON_PATH'] || '../../package.json');
 
 function processExportMap(m) {
@@ -20,6 +21,7 @@ const fs = require('fs');
 const packagesDir = path.resolve(__dirname, '..', '..', 'packages');
 const workspaceVersions = Object.fromEntries(
   fs.readdirSync(packagesDir).map((dir) => {
+    // nosemgrep: javascript.node.require.dynamic-require -- the workspace's own packages, enumerated from disk
     const { name, version } = require(path.join(packagesDir, dir, 'package.json'));
     return [name, version];
   }),
