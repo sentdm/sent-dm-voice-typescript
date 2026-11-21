@@ -419,37 +419,65 @@ describe('SinchAdapter', () => {
     expect(element).toMatchObject({ autoplay: true, srcObject: call.incomingStream });
   });
 
-  test('a call that arrives during another call reaches the app, and the provider still sees the call in progress', async () => {
-    await adapter.register(providerCredential());
+  describe('a call that arrives while a placed call is still dialing', () => {
     const incoming: string[] = [];
-    adapter.onIncoming(({ callId }) => incoming.push(callId));
-    const placed = calls.get(await adapter.call(phone))!;
-    const instance = lastClient().callClient.getInstance();
 
-    const invite = lastClient().callClient.receiveCall(`${prefix}_ben`);
+    const register = async (options: AdapterOptions) => {
+      await load(options);
+      incoming.length = 0;
+      adapter.onIncoming(({ callId }) => incoming.push(callId));
+      await adapter.register(providerCredential());
+    };
 
-    expect(incoming).toEqual([invite.id]);
-    expect(invite.details.endCause).toBe(CallEndCause.None);
-    // The provider holds back its own restart while this is true.
-    expect(instance.hasActiveCall()).toBe(true);
-    placed.end(CallEndCause.HungUp);
-    invite.end(CallEndCause.Canceled);
-    expect(instance.hasActiveCall()).toBe(false);
-  });
+    test('is ended by the provider and announced to nobody unless the app asked for it', async () => {
+      await register({});
+      const placed = calls.get(await adapter.call(phone))!;
 
-  test('when the call answered last ends, a call still in progress is heard again', async () => {
-    await adapter.register(providerCredential());
-    const placed = calls.get(await adapter.call(phone))!;
-    const audio = lastAudio();
-    const invite = lastClient().callClient.receiveCall(`${prefix}_ben`);
+      const invite = await lastClient().callClient.invite(`${prefix}_ben`);
 
-    await adapter.answer(invite.id);
-    expect(audio.srcObject).toBe(invite.incomingStream);
+      expect(incoming).toEqual([]);
+      expect(invite!.details.endCause).toBe(CallEndCause.Canceled);
+      expect(placed.details.endCause).toBe(CallEndCause.None);
+    });
 
-    invite.end(CallEndCause.HungUp);
-    expect(audio.srcObject).toBe(placed.incomingStream);
-    placed.end(CallEndCause.HungUp);
-    expect(audio.srcObject).toBeNull();
+    test('ends the dialing call first and is then announced, so the two never exist together', async () => {
+      await register({ endDialingCallOnIncoming: true });
+      const placed = calls.get(await adapter.call(phone))!;
+      const instance = lastClient().callClient.getInstance();
+
+      const arriving = lastClient().callClient.invite(`${prefix}_ben`);
+      // The dial is hung up at once; the provider has not seen the invite yet.
+      expect(placed.details.endCause).toBe(CallEndCause.Canceled);
+      expect(instance.invites).toEqual([]);
+      const invite = await arriving;
+
+      expect(incoming).toEqual([invite!.id]);
+      expect(invite!.details.endCause).toBe(CallEndCause.None);
+      expect(events.map(({ callId, type }) => [callId, type])).toEqual([[placed.id, 'ended']]);
+    });
+
+    test('leaves a call that has connected alone, and the provider ends the new one as before', async () => {
+      await register({ endDialingCallOnIncoming: true });
+      const placed = calls.get(await adapter.call(phone))!;
+      placed.establish();
+
+      const invite = await lastClient().callClient.invite(`${prefix}_ben`);
+
+      expect(placed.details.endCause).toBe(CallEndCause.None);
+      expect(incoming).toEqual([]);
+      expect(invite!.details.endCause).toBe(CallEndCause.Canceled);
+    });
+
+    test("leaves the dialing call alone when the invite is for another of the user's devices", async () => {
+      await register({ endDialingCallOnIncoming: true });
+      const placed = calls.get(await adapter.call(phone))!;
+
+      const invite = await lastClient().callClient.invite(`${prefix}_ben`, 'instance-2');
+
+      expect(invite).toBeUndefined();
+      expect(placed.details.endCause).toBe(CallEndCause.None);
+      expect(incoming).toEqual([]);
+    });
   });
 
   test('setOutputDevice routes playback to the device, and is unsupported where the browser cannot', async () => {

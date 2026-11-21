@@ -40,6 +40,8 @@ export type AdapterFactory = (options: AdapterOptions) => Promise<ProviderAdapte
 export interface AdapterOptions {
   serviceWorker?: { url?: string | undefined; scope?: string | undefined } | undefined;
   audioElement?: HTMLAudioElement | undefined;
+  /** An incoming call ends a placed call that has not connected yet, and is then announced. */
+  endDialingCallOnIncoming?: boolean | undefined;
 }
 
 export type CallTarget = { kind: 'user'; id: string } | { kind: 'number'; number: string };

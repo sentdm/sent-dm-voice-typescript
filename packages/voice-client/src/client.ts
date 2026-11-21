@@ -96,6 +96,14 @@ export interface SentVoiceOptions {
     | undefined;
 
   /**
+   * What happens to a call that arrives while this client already has one. By default it is declined
+   * before your app hears of it, also while the call you placed is still dialing. With
+   * `endDialingCall`, a call that is still dialing is ended (it reports `completed`) and
+   * `incomingCall` fires for the new one. A call that has connected is never interrupted.
+   */
+  incomingCalls?: { endDialingCall?: boolean | undefined } | undefined;
+
+  /**
    * Usage and call quality data the SDK reports to Sent, authenticated with the voice token: the
    * browser and device, registration and call timings, call quality and error codes. Set `disabled`
    * to report nothing.
@@ -167,6 +175,7 @@ export class SentVoice extends TypedEmitter<SentVoiceEvents> {
     logger = console,
     serviceWorker,
     audio,
+    incomingCalls,
     telemetry,
   }: SentVoiceOptions) {
     super();
@@ -177,7 +186,11 @@ export class SentVoice extends TypedEmitter<SentVoiceEvents> {
       logger,
       parseLogLevel(logLevel, 'SentVoiceOptions.logLevel', createLog(logger, 'warn')) ?? 'warn',
     );
-    this.#adapterOptions = { serviceWorker, audioElement: audio?.element };
+    this.#adapterOptions = {
+      serviceWorker,
+      audioElement: audio?.element,
+      endDialingCallOnIncoming: incomingCalls?.endDialingCall,
+    };
     this.audio = new AudioController(this.#log, audio?.inputDeviceId, audio?.outputDeviceId, {
       check: () => {
         if (this.#state === 'destroyed') throw destroyedError();

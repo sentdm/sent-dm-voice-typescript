@@ -87,11 +87,19 @@ describe('SentVoice', () => {
   test('register hands the service worker and audio element options to the adapter', async () => {
     const serviceWorker = { url: '/voice/sw.js', scope: '/voice/' };
     const element = {} as HTMLAudioElement;
-    const client = createClient({ serviceWorker, audio: { element } });
+    const client = createClient({
+      serviceWorker,
+      audio: { element },
+      incomingCalls: { endDialingCall: true },
+    });
 
     await client.register();
 
-    expect(loadAdapter).toHaveBeenCalledWith({ serviceWorker, audioElement: element });
+    expect(loadAdapter).toHaveBeenCalledWith({
+      serviceWorker,
+      audioElement: element,
+      endDialingCallOnIncoming: true,
+    });
   });
 
   test('register while registering or registered does not register again', async () => {

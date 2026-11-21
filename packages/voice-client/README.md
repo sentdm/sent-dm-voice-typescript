@@ -144,7 +144,7 @@ export function receiveCalls(client: SentVoice) {
 }
 ```
 
-The microphone opens when the call arrives, and `accept()` asks for permission again if that was refused, then resolves with the call. When the user refuses, it rejects with a `MediaPermissionError` and the invite stays pending, so the user can try again. `reject()` declines the call, and `cancelled` fires when the caller hangs up first. A call that arrives while another one is in progress, or still dialing, raises `incomingCall` too; your handler decides whether to `accept()` it or `reject()` it. The call accepted last becomes `activeCall`, and it is the one the user hears: the earlier call is not put on hold, so hang it up when you accept the new one.
+The microphone opens when the call arrives, and `accept()` asks for permission again if that was refused, then resolves with the call. When the user refuses, it rejects with a `MediaPermissionError` and the invite stays pending, so the user can try again. `reject()` declines the call, and `cancelled` fires when the caller hangs up first. The client holds one call at a time. A call that arrives while it already has one, a call you placed that is still dialing included, is declined before your app hears of it, and `incomingCall` does not fire. To take calls while dialing, create the client with `incomingCalls: { endDialingCall: true }`: an incoming call then ends a call that has not connected yet, which reports `completed`, and `incomingCall` fires for the new one. A call that has connected is never interrupted.
 
 ### Call quality and reconnection
 
