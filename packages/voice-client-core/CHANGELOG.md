@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/sentdm/sent-dm-voice-typescript/compare/voice-client-core-v0.2.1...voice-client-core-v0.3.0) (2026-11-21)
+
+
+### Chores
+
+* **voice-client-core:** Synchronize voice-client versions
+
 ## [0.2.1](https://github.com/sentdm/sent-dm-voice-typescript/compare/voice-client-core-v0.2.0...voice-client-core-v0.2.1) (2026-10-23)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/sentdm/sent-dm-voice-typescript/compare/voice-client-v0.2.1...voice-client-v0.3.0) (2026-11-21)
+
+
+### Features
+
+* **client:** add incomingCalls.endDialingCall to take a call while another is still dialing ([fe933c7](https://github.com/sentdm/sent-dm-voice-typescript/commit/fe933c77a168861ab82df3acaf328cd3744acfd7))
+
 ## [0.2.1](https://github.com/sentdm/sent-dm-voice-typescript/compare/voice-client-v0.2.0...voice-client-v0.2.1) (2026-10-23)
 
 
