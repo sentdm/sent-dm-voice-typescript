@@ -91,6 +91,24 @@ export const loadSinchAdapter: AdapterFactory = async (options) =>
     options,
   );
 
+/** The members of the library's call client instance the adapter reaches, none of them typed. */
+interface InviteHandler {
+  instanceId?: unknown;
+  onInvite?: (invite: unknown) => unknown;
+}
+
+/** Whether the invite is for this browser. Every device of the user hears the invites of all of them. */
+function addressedHere(invite: unknown, instanceId: unknown): boolean {
+  const message = (invite as { message?: { isAddressedToInstance?: (id: unknown) => unknown } } | undefined)
+    ?.message;
+  return (
+    typeof message?.isAddressedToInstance === 'function' && message.isAddressedToInstance(instanceId) === true
+  );
+}
+
+/** How long an invite waits for the dialing call to end before the library gets it anyway. */
+const endDialingTimeout = 2_000;
+
 class SinchAdapter implements ProviderAdapter {
   #sinch: Sinch;
   #options: AdapterOptions;
@@ -100,6 +118,8 @@ class SinchAdapter implements ProviderAdapter {
   #audio: HTMLAudioElement | undefined;
   #calls = new Map<string, Call>();
   #answerRetryAt = new Map<string, number>();
+  /** Placed calls that have not connected yet, each with what to run once it has ended. */
+  #dialing = new Map<string, Array<() => void>>();
   #incomingListeners: Array<(call: IncomingCall) => void> = [];
   #callEventListeners: Array<(event: CallEvent) => void> = [];
 
@@ -215,6 +235,7 @@ class SinchAdapter implements ProviderAdapter {
           onCredentialsRequired: (_, registration) => void registration.register(this.#credential),
           onClientStarted: ({ callClient }) => {
             callClient.addListener({ onIncomingCall: (_, call) => this.#receive(call) });
+            if (this.#options.endDialingCallOnIncoming) this.#endDialingCallOnInvite(callClient);
             if (this.#inputDeviceId !== undefined) this.#useInput(callClient, this.#inputDeviceId);
             resolve();
           },
@@ -244,6 +265,50 @@ class SinchAdapter implements ProviderAdapter {
     return this.#client;
   }
 
+  /**
+   * With `endDialingCallOnIncoming`, an invite that finds only a call still dialing hangs that call up and
+   * reaches the library once it has ended, so the library sees no call and announces the invite as usual.
+   * Two calls never exist together: the library keeps one signaling subscription and one stats collector,
+   * and ends both whenever any call ends. A connected call, or an invite still ringing, is left alone, and
+   * the library ends the new invite as it always did.
+   *
+   * The members reached are not typed. When one is missing nothing is wrapped, and
+   * `tests/adapter/sinch-rtc-internals.test.ts` fails first.
+   */
+  #endDialingCallOnInvite(callClient: CallClient): void {
+    const instance = (callClient as { getInstance?: () => InviteHandler | undefined }).getInstance?.();
+    const onInvite = instance?.onInvite;
+    if (!instance || typeof onInvite !== 'function') return;
+
+    instance.onInvite = async (invite: unknown) => {
+      if (addressedHere(invite, instance.instanceId)) await this.#endDialing();
+      return onInvite.call(instance, invite);
+    };
+  }
+
+  async #endDialing(): Promise<void> {
+    if (this.#calls.size === 0 || [...this.#calls.keys()].some((callId) => !this.#dialing.has(callId)))
+      return;
+
+    const ended = [...this.#dialing].map(
+      ([callId, resume]) =>
+        new Promise<void>((resolve) => {
+          resume.push(resolve);
+          try {
+            this.#calls.get(callId)?.hangup();
+          } catch {
+            // The call ended on its own in the meantime, and its end resolves this.
+          }
+        }),
+    );
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      Promise.all(ended),
+      new Promise((resolve) => (timer = setTimeout(resolve, endDialingTimeout))),
+    ]);
+    clearTimeout(timer);
+  }
+
   #useInput(callClient: CallClient, deviceId: string): void {
     callClient.setAudioTrackConstraints({ deviceId });
   }
@@ -259,6 +324,7 @@ class SinchAdapter implements ProviderAdapter {
       throw new MediaPermissionError();
     }
     this.#play(call);
+    this.#dialing.set(call.id, []);
     return this.#track(call);
   }
 
@@ -277,7 +343,10 @@ class SinchAdapter implements ProviderAdapter {
     const listener: CallListener = {
       onCallProgressing: () => this.#emit({ callId: call.id, type: 'ringing' }),
       onCallAnswered: () => this.#emit({ callId: call.id, type: 'answered' }),
-      onCallEstablished: () => this.#emit({ callId: call.id, type: 'connected' }),
+      onCallEstablished: () => {
+        this.#dialing.delete(call.id);
+        this.#emit({ callId: call.id, type: 'connected' });
+      },
       onCallQualityWarningEvent: (_, warning) => {
         const event = this.#warning(call.id, warning);
         if (event) this.#emit(event);
@@ -288,6 +357,9 @@ class SinchAdapter implements ProviderAdapter {
         this.#answerRetryAt.delete(call.id);
         if (this.#audio && this.#audio.srcObject === call.incomingStream) this.#audio.srcObject = null;
         this.#emit(this.#ended(call));
+        const ended = this.#dialing.get(call.id);
+        this.#dialing.delete(call.id);
+        ended?.forEach((resume) => resume());
       },
     };
     call.addListener(listener);

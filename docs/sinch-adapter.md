@@ -14,8 +14,8 @@ checklist at the end has been run against a live application.
 - Release cadence in 2026: 2.42.6 (Feb 25), 2.44.4 (Mar 16), 2.45.5 (Apr 8), 2.46.8 (Apr 16), 2.46.9 (Apr 20),
   2.47.7 (Jun 23), 2.48.11 (Jul 15), 2.49.11 (Sep 18): a minor release every three to eight weeks.
 - Before upgrading, re-check every call listed in [Calls](#calls), the listener callbacks in [Events](#events),
-  `CallEndCause`, the quality warning names and thresholds, and the untyped `getPeerConnectionStats()`, then run
-  the checklist.
+  `CallEndCause`, the quality warning names and thresholds, the untyped `getPeerConnectionStats()` and the
+  invite handler the adapter wraps (see [Incoming calls](#incoming-calls)), then run the checklist.
 
 ## Loading
 
@@ -54,8 +54,16 @@ the WebRTC bundle out of pages that never register. A load that fails rejects wi
 - If push cannot be set up (no service worker support, missing worker file, permission denied, or no user
   gesture in browsers that require one for the permission prompt, such as Firefox and Safari), `sinch-rtc`
   fails `start()`, so `register()` rejects.
-- _Source:_ a call that arrives while another call is live is declined by `sinch-rtc` itself and never reaches
-  the adapter.
+- _Source:_ `sinch-rtc` ends an invite that arrives while any call is not yet ended, one still dialing
+  included, before a listener hears of it: `CallClientInstance.onInvite` asks `hasActiveCall()` first and calls
+  `terminateDueToOngoingCall()`. There is no option for it, and it must not be bypassed: see "one call at a
+  time" under [Calls](#calls).
+- With `endDialingCallOnIncoming` (the public `incomingCalls.endDialingCall`), the adapter wraps `onInvite` on
+  the instance (`callClient.getInstance()`, on every `onClientStarted`). An invite addressed to this instance
+  that finds only placed calls that have not connected hangs them up, waits for them to end (2 s at most) and
+  only then reaches the library, which sees no call and announces the invite as usual. A connected call or a
+  ringing invite is left alone. None of the members reached is typed;
+  `tests/adapter/sinch-rtc-internals.test.ts` checks them against the pinned library.
 - _Source:_ `sinch-rtc` opens the microphone (`getUserMedia`) when the invite arrives, before `answer()`;
   `answer()` asks again only when that failed, and rejects when it fails again.
 - _Source:_ `sinch-rtc` ignores an `answer()` within 1.5 s of the previous one on the same call, so after a
@@ -91,8 +99,9 @@ the WebRTC bundle out of pages that never register. A load that fails rejects wi
   the latest placed call from the moment it is placed (early media) or the latest answered incoming call, and
   is cleared when that call ends.
 - A call that has ended is forgotten, and controls on it do nothing: `sinch-rtc` throws on a second hangup.
-- _Source:_ one call at a time. Every call shares one signaling subscription, which `sinch-rtc` cancels when
-  any call ends, so a second live call loses its signaling; the core refuses `connect()` and `joinConference()`
+- _Source:_ one call at a time. Every call shares one signaling subscription and one stats collector, which
+  `sinch-rtc` cancels and resets when any call ends (`CallClientInstance.addCallListener`), so a second live
+  call loses its signaling; the core refuses `connect()` and `joinConference()`
   with `CALL_IN_PROGRESS` while a call is live or an invite is pending.
 - _Source:_ a placed call whose `getUserMedia` failed carries an empty outgoing stream and no error. The adapter
   hangs it up and rejects with `MediaPermissionError`.
@@ -222,13 +231,17 @@ error to [Error mapping](#error-mapping).
 8. One identity in two tabs and on two devices: who rings, who can answer, what the others see.
 9. Refresh: a short-lived token; a token provider that starts failing mid-call.
 10. Read `call.headers` on both sides of a call.
-11. Deny notification permission and confirm `register()` rejects.
-12. During a call: turn the network off for 10 s and back on; switch networks (Wi-Fi to cable or a hotspot);
+11. A call that arrives during another call. Without `incomingCalls.endDialingCall`: nothing fires, while
+    dialing and while connected, and the first call keeps its events (hang up from the far side). With it:
+    while dialing, the dial ends as `completed` and `incomingCall` fires, then answer, decline, and let the
+    caller cancel; while connected, nothing fires and the call is unaffected.
+12. Deny notification permission and confirm `register()` rejects.
+13. During a call: turn the network off for 10 s and back on; switch networks (Wi-Fi to cable or a hotspot);
     record `reconnecting`, `reconnected` and the end cause. Confirm a healthy call never reports `reconnecting`
     (the `completed` ICE state).
-13. Sleep the laptop for a few minutes, while idle and during a call. After waking, confirm incoming calls ring
+14. Sleep the laptop for a few minutes, while idle and during a call. After waking, confirm incoming calls ring
     again, and record what the call did.
-14. With a short-lived token, go offline until a refresh fails: confirm `offline`, then `registered` once back
+15. With a short-lived token, go offline until a refresh fails: confirm `offline`, then `registered` once back
     online.
-15. Degrade the network during a call (loss, delay and jitter with an OS-level network conditioner) and record
+16. Degrade the network during a call (loss, delay and jitter with an OS-level network conditioner) and record
     which quality warnings are raised and cleared.

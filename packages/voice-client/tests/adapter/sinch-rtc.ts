@@ -123,11 +123,54 @@ export class FakeCall {
   }
 }
 
+export interface FakeInvite {
+  from: string;
+  message: { isAddressedToInstance(instanceId: string): boolean };
+}
+
+/** The part of the library behind the call client that decides what happens to an invite. */
+export class FakeCallClientInstance {
+  readonly instanceId = 'instance-1';
+  readonly calls: FakeCall[] = [];
+  /** Every invite the library itself was given, in order. */
+  readonly invites: FakeInvite[] = [];
+
+  constructor(readonly announce: (call: FakeCall) => void) {}
+
+  hasActiveCall(): boolean {
+    return this.calls.some((call) => call.details.endCause === CallEndCause.None);
+  }
+
+  /** As the library does: an invite that finds a call in progress is ended and announced to nobody. */
+  onInvite(invite: FakeInvite): FakeCall | undefined {
+    this.invites.push(invite);
+    if (!invite.message.isAddressedToInstance(this.instanceId)) return undefined;
+    const hadActiveCall = this.hasActiveCall();
+    const call = new FakeCall('inbound', invite.from);
+    this.calls.push(call);
+    if (hadActiveCall) call.end(CallEndCause.Canceled);
+    else this.announce(call);
+    return call;
+  }
+}
+
+const inviteFrom = (from: string, instanceId = 'instance-1'): FakeInvite => ({
+  from,
+  message: { isAddressedToInstance: (id) => id === instanceId },
+});
+
 export class FakeCallClient {
   readonly placed: Array<{ method: string; destination: string }> = [];
   constraints: MediaTrackConstraints | null = null;
   microphoneDenied = false;
   #listeners: CallClientListener[] = [];
+  #instance = new FakeCallClientInstance((call) => {
+    for (const listener of this.#listeners) listener.onIncomingCall(this, call);
+  });
+
+  getInstance(): FakeCallClientInstance {
+    return this.#instance;
+  }
 
   addListener(listener: CallClientListener): void {
     this.#listeners.push(listener);
@@ -150,14 +193,19 @@ export class FakeCallClient {
   }
 
   receiveCall(from: string): FakeCall {
-    const call = new FakeCall('inbound', from);
-    for (const listener of this.#listeners) listener.onIncomingCall(this, call);
-    return call;
+    return this.#instance.onInvite(inviteFrom(from)) as FakeCall;
+  }
+
+  /** An invite as it comes off the wire: through whatever handler the instance has now. */
+  async invite(from: string, instanceId?: string): Promise<FakeCall | undefined> {
+    return this.#instance.onInvite(inviteFrom(from, instanceId ?? this.#instance.instanceId));
   }
 
   #place(method: string, destination: string): FakeCall {
     this.placed.push({ method, destination });
-    return new FakeCall('outbound', destination, !this.microphoneDenied);
+    const call = new FakeCall('outbound', destination, !this.microphoneDenied);
+    this.#instance.calls.push(call);
+    return call;
   }
 }
 
