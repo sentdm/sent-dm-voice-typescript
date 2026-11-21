@@ -14,8 +14,8 @@ checklist at the end has been run against a live application.
 - Release cadence in 2026: 2.42.6 (Feb 25), 2.44.4 (Mar 16), 2.45.5 (Apr 8), 2.46.8 (Apr 16), 2.46.9 (Apr 20),
   2.47.7 (Jun 23), 2.48.11 (Jul 15), 2.49.11 (Sep 18): a minor release every three to eight weeks.
 - Before upgrading, re-check every call listed in [Calls](#calls), the listener callbacks in [Events](#events),
-  `CallEndCause`, the quality warning names and thresholds, and the untyped `getPeerConnectionStats()`, then run
-  the checklist.
+  `CallEndCause`, the quality warning names and thresholds, the untyped `getPeerConnectionStats()` and the
+  invite handler the adapter wraps (see [Incoming calls](#incoming-calls)), then run the checklist.
 
 ## Loading
 
@@ -54,8 +54,16 @@ the WebRTC bundle out of pages that never register. A load that fails rejects wi
 - If push cannot be set up (no service worker support, missing worker file, permission denied, or no user
   gesture in browsers that require one for the permission prompt, such as Firefox and Safari), `sinch-rtc`
   fails `start()`, so `register()` rejects.
-- _Source:_ a call that arrives while another call is live is declined by `sinch-rtc` itself and never reaches
-  the adapter.
+- _Source:_ on its own, `sinch-rtc` ends an invite that arrives while any call is not yet ended, one still
+  dialing included, before a listener hears of it: `CallClientInstance.onInvite` asks `hasActiveCall()` first
+  and calls `terminateDueToOngoingCall()`. There is no option for it. The adapter wraps `onInvite` on the
+  instance (`callClient.getInstance()`, on every `onClientStarted`) and answers that one question with
+  `false`, so the invite reaches `onIncomingCall` and the app decides. `hasActiveCall()` is left alone
+  everywhere else: `DefaultSinchClient` asks it before restarting on a configuration change, and must keep
+  hearing `true` during a call. Neither member is typed; `tests/adapter/sinch-rtc-internals.test.ts` checks
+  both against the pinned library, and that the question is asked before the handler first waits.
+- Each call has its own session and media, but the adapter plays one stream: the call answered last. When
+  that call ends, the stream of a call still in progress is played again.
 - _Source:_ `sinch-rtc` opens the microphone (`getUserMedia`) when the invite arrives, before `answer()`;
   `answer()` asks again only when that failed, and rejects when it fails again.
 - _Source:_ `sinch-rtc` ignores an `answer()` within 1.5 s of the previous one on the same call, so after a
@@ -222,13 +230,15 @@ error to [Error mapping](#error-mapping).
 8. One identity in two tabs and on two devices: who rings, who can answer, what the others see.
 9. Refresh: a short-lived token; a token provider that starts failing mid-call.
 10. Read `call.headers` on both sides of a call.
-11. Deny notification permission and confirm `register()` rejects.
-12. During a call: turn the network off for 10 s and back on; switch networks (Wi-Fi to cable or a hotspot);
+11. A call that arrives during another call, live and still dialing: `incomingCall` fires; answer it with the
+    first call still up, then again after hanging the first one up; decline it; let the caller cancel.
+12. Deny notification permission and confirm `register()` rejects.
+13. During a call: turn the network off for 10 s and back on; switch networks (Wi-Fi to cable or a hotspot);
     record `reconnecting`, `reconnected` and the end cause. Confirm a healthy call never reports `reconnecting`
     (the `completed` ICE state).
-13. Sleep the laptop for a few minutes, while idle and during a call. After waking, confirm incoming calls ring
+14. Sleep the laptop for a few minutes, while idle and during a call. After waking, confirm incoming calls ring
     again, and record what the call did.
-14. With a short-lived token, go offline until a refresh fails: confirm `offline`, then `registered` once back
+15. With a short-lived token, go offline until a refresh fails: confirm `offline`, then `registered` once back
     online.
-15. Degrade the network during a call (loss, delay and jitter with an OS-level network conditioner) and record
+16. Degrade the network during a call (loss, delay and jitter with an OS-level network conditioner) and record
     which quality warnings are raised and cleared.

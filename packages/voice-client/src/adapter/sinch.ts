@@ -91,6 +91,36 @@ export const loadSinchAdapter: AdapterFactory = async (options) =>
     options,
   );
 
+interface InviteHandler {
+  hasActiveCall?: () => boolean;
+  onInvite?: (invite: unknown) => unknown;
+}
+
+/**
+ * Lets an invite that arrives during another call reach `onIncomingCall`, so the app decides what to do
+ * with it. On its own the library ends such an invite before any listener hears of it: its invite handler
+ * asks `hasActiveCall()` first. The answer is replaced for that one question only, because the library
+ * asks the same thing before it restarts itself, and that answer must stay true while a call is live.
+ *
+ * Neither member is part of the library's typed surface. When one is missing this does nothing, and
+ * `tests/adapter/sinch-rtc-internals.test.ts` fails first.
+ */
+function admitInvitesDuringACall(callClient: CallClient): void {
+  const instance = (callClient as { getInstance?: () => InviteHandler | undefined }).getInstance?.();
+  const onInvite = instance?.onInvite;
+  if (!instance || typeof onInvite !== 'function' || typeof instance.hasActiveCall !== 'function') return;
+
+  instance.onInvite = function (this: InviteHandler, invite: unknown) {
+    this.hasActiveCall = () => false;
+    try {
+      // The handler asks before its first await, so the answer is back in place when this returns.
+      return onInvite.call(this, invite);
+    } finally {
+      delete this.hasActiveCall;
+    }
+  };
+}
+
 class SinchAdapter implements ProviderAdapter {
   #sinch: Sinch;
   #options: AdapterOptions;
@@ -215,6 +245,7 @@ class SinchAdapter implements ProviderAdapter {
           onCredentialsRequired: (_, registration) => void registration.register(this.#credential),
           onClientStarted: ({ callClient }) => {
             callClient.addListener({ onIncomingCall: (_, call) => this.#receive(call) });
+            admitInvitesDuringACall(callClient);
             if (this.#inputDeviceId !== undefined) this.#useInput(callClient, this.#inputDeviceId);
             resolve();
           },
@@ -286,7 +317,10 @@ class SinchAdapter implements ProviderAdapter {
         call.removeListener(listener);
         this.#calls.delete(call.id);
         this.#answerRetryAt.delete(call.id);
-        if (this.#audio && this.#audio.srcObject === call.incomingStream) this.#audio.srcObject = null;
+        if (this.#audio && this.#audio.srcObject === call.incomingStream) {
+          // Another call may still be live, silent since this one took the element over.
+          this.#audio.srcObject = [...this.#calls.values()].at(-1)?.incomingStream ?? null;
+        }
         this.#emit(this.#ended(call));
       },
     };

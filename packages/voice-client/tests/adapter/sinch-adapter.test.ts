@@ -419,6 +419,39 @@ describe('SinchAdapter', () => {
     expect(element).toMatchObject({ autoplay: true, srcObject: call.incomingStream });
   });
 
+  test('a call that arrives during another call reaches the app, and the provider still sees the call in progress', async () => {
+    await adapter.register(providerCredential());
+    const incoming: string[] = [];
+    adapter.onIncoming(({ callId }) => incoming.push(callId));
+    const placed = calls.get(await adapter.call(phone))!;
+    const instance = lastClient().callClient.getInstance();
+
+    const invite = lastClient().callClient.receiveCall(`${prefix}_ben`);
+
+    expect(incoming).toEqual([invite.id]);
+    expect(invite.details.endCause).toBe(CallEndCause.None);
+    // The provider holds back its own restart while this is true.
+    expect(instance.hasActiveCall()).toBe(true);
+    placed.end(CallEndCause.HungUp);
+    invite.end(CallEndCause.Canceled);
+    expect(instance.hasActiveCall()).toBe(false);
+  });
+
+  test('when the call answered last ends, a call still in progress is heard again', async () => {
+    await adapter.register(providerCredential());
+    const placed = calls.get(await adapter.call(phone))!;
+    const audio = lastAudio();
+    const invite = lastClient().callClient.receiveCall(`${prefix}_ben`);
+
+    await adapter.answer(invite.id);
+    expect(audio.srcObject).toBe(invite.incomingStream);
+
+    invite.end(CallEndCause.HungUp);
+    expect(audio.srcObject).toBe(placed.incomingStream);
+    placed.end(CallEndCause.HungUp);
+    expect(audio.srcObject).toBeNull();
+  });
+
   test('setOutputDevice routes playback to the device, and is unsupported where the browser cannot', async () => {
     const element = new FakeAudio();
     await load({ audioElement: element as unknown as HTMLAudioElement });
