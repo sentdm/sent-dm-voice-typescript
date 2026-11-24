@@ -45,6 +45,7 @@
   },
   "pnpm": {
     "overrides": {
+      "basic-ftp": "^6.2.4",
       "minimatch": "^11.0.1"
     }
   },
